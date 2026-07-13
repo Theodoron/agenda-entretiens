@@ -373,6 +373,12 @@
 .table-date {
   font-weight: 700;
 }
+.advisor-history-count {
+  color: #a34700;
+  font-size: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .table-actions {
   display: flex;
   align-items: center;

@@ -1006,6 +1006,7 @@ function AdvisorDashboard() {
                   <th>Date et heure</th>
                   <th>Objet</th>
                   <th>Statut</th>
+                  <th>Fréquentation</th>
                   <th>
                     <span className="sr-only">Actions</span>
                   </th>
@@ -1034,13 +1035,17 @@ function AdvisorDashboard() {
                             {formatStatus(item?.status ?? "AVAILABLE")}
                           </span>
                         </td>
+                        <td className="advisor-history-count">
+                          {item && (
+                            <>
+                              {item.historyCount} entretien
+                              {item.historyCount > 1 ? "s" : ""} au CIDO
+                            </>
+                          )}
+                        </td>
                         <td className="table-actions">
                           {item && (
                             <>
-                              <span className="history-count">
-                                {item.historyCount} entretien
-                                {item.historyCount > 1 ? "s" : ""} au CIDO
-                              </span>
                               <button
                                 className="compact"
                                 onClick={() => setSheetId(item.id)}
