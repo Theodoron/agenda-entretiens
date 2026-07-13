@@ -58,7 +58,7 @@ export class DocumentsService {
 
   async list(userId: string, appointmentId: string) {
     const access = await this.access(userId, appointmentId);
-    return this.prisma.attachment.findMany({ where: { appointmentId, ...(access.isStudent ? { scanStatus: 'CLEAN' } : {}) }, select: { id: true, originalName: true, mimeType: true, sizeBytes: true, scanStatus: true, scannedAt: true, createdAt: true, uploaderId: true }, orderBy: { createdAt: 'asc' } });
+    return this.prisma.attachment.findMany({ where: { appointmentId, ...(access.isStudent ? { scanStatus: 'CLEAN' } : {}) }, select: { id: true, originalName: true, mimeType: true, sizeBytes: true, scanStatus: true, scannedAt: true, studentDownloadedAt: true, advisorDownloadedAt: true, createdAt: true, uploaderId: true }, orderBy: { createdAt: 'asc' } });
   }
 
   async pending(userId: string) {
@@ -110,6 +110,15 @@ export class DocumentsService {
     const object = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: attachment.storageKey }));
     if (!object.Body) throw new NotFoundException('Fichier introuvable dans le stockage');
     const body = Buffer.from(await object.Body.transformToByteArray());
+    const consultedAt = new Date();
+    await Promise.all([
+      access.isStudent
+        ? this.prisma.attachment.updateMany({ where: { id, studentDownloadedAt: null }, data: { studentDownloadedAt: consultedAt } })
+        : Promise.resolve(),
+      access.isAdvisor
+        ? this.prisma.attachment.updateMany({ where: { id, advisorDownloadedAt: null }, data: { advisorDownloadedAt: consultedAt } })
+        : Promise.resolve(),
+    ]);
     return { attachment, body };
   }
 

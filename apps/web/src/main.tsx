@@ -116,6 +116,8 @@ type DocumentItem = {
   originalName: string;
   sizeBytes: number;
   scanStatus: "PENDING" | "CLEAN" | "INFECTED" | "FAILED";
+  studentDownloadedAt?: string | null;
+  advisorDownloadedAt?: string | null;
 };
 
 function CancellationDialog({
@@ -270,6 +272,29 @@ function CommunicationsHub({
     setError("");
     try {
       await api(`/documents/${item.id}`, { method: "DELETE" });
+      await reload();
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
+  async function downloadDocument(item: DocumentItem) {
+    setError("");
+    try {
+      const response = await fetch(`/api/v1/documents/${item.id}/download`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.message ?? "Échec du téléchargement");
+      }
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = item.originalName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       await reload();
     } catch (value) {
       setError((value as Error).message);
@@ -448,14 +473,20 @@ function CommunicationsHub({
                     {Math.ceil(item.sizeBytes / 1024)} Ko ·{" "}
                     {formatStatus(item.scanStatus)}
                   </small>
+                  {item.advisorDownloadedAt && (
+                    <small>Consulté par le conseiller le {formatDate(item.advisorDownloadedAt)}</small>
+                  )}
+                  {item.studentDownloadedAt && (
+                    <small>Consulté par l’étudiant(e) le {formatDate(item.studentDownloadedAt)}</small>
+                  )}
                 </span>
                 {item.scanStatus === "CLEAN" && (
-                  <a
-                    className="download"
-                    href={`/api/v1/documents/${item.id}/download`}
+                  <button
+                    className="link-button"
+                    onClick={() => downloadDocument(item)}
                   >
                     Télécharger
-                  </a>
+                  </button>
                 )}
                 {role === "advisor" && (
                   <button
