@@ -222,6 +222,15 @@
 .sheet-heading h2 {
   margin-bottom: 0;
 }
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.sheet-actions .secondary {
+  margin: 0;
+}
 .communications {
   background: #fff;
   border: 1px solid #e6deed;
@@ -703,5 +712,69 @@ footer {
   }
   .logout {
     font-size: 0.8rem;
+  }
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body {
+    background: #fff;
+    color: #111;
+    font-size: 10.5pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  #root > header,
+  #root > footer,
+  .skip,
+  .dashboard > :not(.communications),
+  .communications form,
+  .communications .print-actions,
+  .documents-panel button {
+    display: none !important;
+  }
+  main {
+    max-width: none;
+    padding: 0;
+  }
+  .dashboard {
+    display: block;
+  }
+  .communications {
+    display: block !important;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+  }
+  .communication-grid {
+    display: block;
+  }
+  .communication-grid > div,
+  .documents-panel,
+  .internal {
+    margin-top: 1.25rem;
+  }
+  .sheet-summary,
+  .thread article,
+  .shared-note,
+  .document-list li,
+  .internal-note {
+    break-inside: avoid;
+  }
+  h2,
+  h3,
+  summary {
+    break-after: avoid;
+  }
+  .sheet-summary {
+    border: 1px solid #ddd;
+    background: #f7f7f7;
+  }
+  .documents-panel .hint {
+    display: none;
   }
 }

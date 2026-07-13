@@ -307,9 +307,14 @@ function CommunicationsHub({
           <p className="eyebrow">Fiche entretien</p>
           <h2>Conversation, synthèse et documents</h2>
         </div>
-        <button className="secondary compact" onClick={onClose}>
-          Fermer la fiche
-        </button>
+        <div className="sheet-actions print-actions">
+          <button className="compact" onClick={() => window.print()}>
+            Imprimer la fiche
+          </button>
+          <button className="secondary compact" onClick={onClose}>
+            Fermer la fiche
+          </button>
+        </div>
       </div>
       {details && (
         <dl className="sheet-summary">
