@@ -109,7 +109,8 @@ export class DocumentsService {
     if (attachment.scanStatus !== 'CLEAN' && !access.isAdmin) throw new ForbiddenException('Le document n’est pas disponible avant la fin de son analyse');
     const object = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: attachment.storageKey }));
     if (!object.Body) throw new NotFoundException('Fichier introuvable dans le stockage');
-    return { attachment, body: object.Body.transformToWebStream() };
+    const body = Buffer.from(await object.Body.transformToByteArray());
+    return { attachment, body };
   }
 }
 
@@ -121,5 +122,5 @@ export class DocumentsController {
   @Get('appointments/:appointmentId/documents') list(@Req() req: Request, @Param('appointmentId') id: string) { return this.documents.list(requireUserId(req), id); }
   @Get('admin/documents/pending') pending(@Req() req: Request) { return this.documents.pending(requireUserId(req)); }
   @Post('documents/:id/scan-result') scan(@Req() req: Request, @Param('id') id: string, @Body() dto: ScanResultDto) { return this.documents.scan(requireUserId(req), id, dto.status); }
-  @Get('documents/:id/download') async download(@Req() req: Request, @Param('id') id: string) { const result = await this.documents.download(requireUserId(req), id); return new StreamableFile(result.body as any, { type: result.attachment.mimeType, disposition: `attachment; filename*=UTF-8''${encodeURIComponent(result.attachment.originalName)}` }); }
+  @Get('documents/:id/download') async download(@Req() req: Request, @Param('id') id: string) { const result = await this.documents.download(requireUserId(req), id); return new StreamableFile(result.body, { type: result.attachment.mimeType, disposition: `attachment; filename*=UTF-8''${encodeURIComponent(result.attachment.originalName)}`, length: result.body.length }); }
 }
