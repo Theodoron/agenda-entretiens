@@ -367,6 +367,11 @@
   gap: 0.5rem;
   min-width: 180px;
 }
+.table-actions button {
+  min-height: 42px;
+  padding: 0.65rem 1rem;
+  line-height: 1.1;
+}
 .appointment-groups {
   display: grid;
   gap: 2rem;

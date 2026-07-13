@@ -774,7 +774,7 @@ function StudentDashboard() {
                 </td>
                 <td className="table-actions">
                   {!item.status.startsWith("CANCELLED") && (
-                    <button className="link-button" onClick={() => setSheetId(item.id)}>
+                    <button className="compact" onClick={() => setSheetId(item.id)}>
                       Fiche entretien
                     </button>
                   )}
@@ -1033,7 +1033,7 @@ function AdvisorDashboard() {
                                 {item.historyCount > 1 ? "s" : ""} au CIDO
                               </span>
                               <button
-                                className="link-button"
+                                className="compact"
                                 onClick={() => setSheetId(item.id)}
                               >
                                 Fiche entretien
