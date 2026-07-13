@@ -572,6 +572,14 @@ button {
 button:hover {
   background: #3c1f68;
 }
+button.secondary,
+button.danger,
+button.header-button {
+  width: auto;
+  min-height: 42px;
+  padding: 0.65rem 1rem;
+  line-height: 1.1;
+}
 .logout {
   margin-left: auto;
   width: auto;
