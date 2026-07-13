@@ -13,6 +13,12 @@ export function canReadInternalNote(isAdvisor: boolean, isAdmin: boolean): boole
   return isAdvisor || isAdmin;
 }
 
+export function messageAuthorRole(authorId: string, studentId: string, advisorId: string): 'STUDENT' | 'ADVISOR' | 'ADMIN' {
+  if (authorId === studentId) return 'STUDENT';
+  if (authorId === advisorId) return 'ADVISOR';
+  return 'ADMIN';
+}
+
 function contentOf(dto: ContentDto) {
   const content = dto.content.trim();
   if (!content) throw new BadRequestException('Le contenu ne peut pas être vide');
@@ -35,8 +41,18 @@ export class CommunicationsService {
   }
 
   async messages(userId: string, appointmentId: string) {
-    await this.access(userId, appointmentId);
-    return this.prisma.message.findMany({ where: { appointmentId, visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } });
+    const access = await this.access(userId, appointmentId);
+    const messages = await this.prisma.message.findMany({ where: { appointmentId, visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } });
+    const authorIds = [...new Set(messages.map(message => message.authorId))];
+    const authors = authorIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: authorIds } }, select: { id: true, firstName: true, lastName: true } })
+      : [];
+    const authorsById = new Map(authors.map(author => [author.id, author]));
+    return messages.map(message => ({
+      ...message,
+      author: authorsById.get(message.authorId) ?? { firstName: 'Utilisateur', lastName: 'inconnu' },
+      authorRole: messageAuthorRole(message.authorId, access.appointment.studentId, access.appointment.advisorId),
+    }));
   }
 
   async addMessage(userId: string, appointmentId: string, dto: ContentDto) {

@@ -227,6 +227,24 @@
   border-radius: 12px;
   background: #f5f0fa;
 }
+.thread article.message-student {
+  background: #f5f0fa;
+  border: 1px solid #e4d8ef;
+}
+.thread article.message-advisor {
+  background: #edf8f7;
+  border: 1px solid #c5e4df;
+}
+.thread article.message-admin {
+  background: #f2f4f7;
+  border: 1px solid #d8dde5;
+}
+.thread article strong {
+  color: #32185b;
+}
+.thread article.message-advisor strong {
+  color: #176b64;
+}
 .documents-panel {
   margin-top: 1.5rem;
   padding-top: 1.5rem;

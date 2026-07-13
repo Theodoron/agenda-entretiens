@@ -101,6 +101,8 @@ const formatStatus = (status: string) =>
 type Communication = {
   id: string;
   authorId: string;
+  author?: { firstName: string; lastName: string };
+  authorRole?: "STUDENT" | "ADVISOR" | "ADMIN";
   content: string;
   createdAt: string;
 };
@@ -283,8 +285,19 @@ function CommunicationsHub({
           <div className="thread">
             {messages.length ? (
               messages.map((item) => (
-                <article key={item.id}>
-                  <p>{item.content}</p>
+                <article
+                  className={`message-${(item.authorRole ?? "ADMIN").toLowerCase()}`}
+                  key={item.id}
+                >
+                  <p>
+                    <strong>
+                      {item.author
+                        ? `${item.author.firstName} ${item.author.lastName}`
+                        : "Utilisateur"}{" "}
+                      :
+                    </strong>{" "}
+                    {item.content}
+                  </p>
                   <small>
                     {new Date(item.createdAt).toLocaleString("fr-FR")}
                   </small>
