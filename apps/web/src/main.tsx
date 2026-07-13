@@ -1042,9 +1042,9 @@ function AdvisorDashboard() {
                             </>
                           )}
                         </td>
-                        <td className="table-actions">
+                        <td className="table-actions advisor-table-actions">
                           {item && (
-                            <>
+                            <div className="advisor-action-buttons">
                               <button
                                 className="compact"
                                 onClick={() => setSheetId(item.id)}
@@ -1069,7 +1069,7 @@ function AdvisorDashboard() {
                                   Annuler
                                 </button>
                               )}
-                            </>
+                            </div>
                           )}
                         </td>
                       </tr>

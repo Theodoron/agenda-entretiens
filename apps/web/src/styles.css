@@ -393,6 +393,16 @@
   white-space: nowrap;
   flex: 0 0 auto;
 }
+.advisor-table-actions {
+  display: table-cell;
+  vertical-align: middle;
+}
+.advisor-action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
 .appointment-groups {
   display: grid;
   gap: 2rem;
