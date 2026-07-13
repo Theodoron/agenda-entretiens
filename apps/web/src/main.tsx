@@ -74,6 +74,9 @@ const formatDate = (value: string) =>
     timeStyle: "short",
   }).format(new Date(value));
 const active = (status: string) => ["BOOKED", "CONFIRMED"].includes(status);
+const isUpcomingAppointment = (appointment: Appointment, now = new Date()) =>
+  active(appointment.status) &&
+  new Date(appointment.availability.startsAt) >= now;
 const formatMode = (mode: string) =>
   ({ IN_PERSON: "Présentiel", PHONE: "Téléphone", VIDEO: "Visioconférence" })[
     mode
@@ -670,11 +673,11 @@ function StudentDashboard() {
           <p className="empty">Vous n’avez pas encore de rendez-vous.</p>
         ) : (
           <div className="appointment-groups">
-            {(["À venir", "Passés"] as const).map((group) => {
+            {(["À venir", "Historique"] as const).map((group) => {
               const items = appointments.filter((item) =>
                 group === "À venir"
-                  ? new Date(item.availability.startsAt) >= new Date()
-                  : new Date(item.availability.startsAt) < new Date(),
+                  ? isUpcomingAppointment(item)
+                  : !isUpcomingAppointment(item),
               );
               return (
                 <div key={group}>
