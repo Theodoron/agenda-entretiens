@@ -364,11 +364,13 @@
 }
 .table-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   min-width: 180px;
 }
 .table-actions button {
   height: 42px;
+  margin: 0;
   padding: 0.65rem 1rem;
   line-height: 1.1;
   white-space: nowrap;
