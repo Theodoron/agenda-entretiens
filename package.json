@@ -1,0 +1,23 @@
+{
+  "name": "agenda-entretiens",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "concurrently -n api,web,worker -c magenta,cyan,yellow \"npm run dev -w @agenda/api\" \"npm run dev -w @agenda/web\" \"npm run worker -w @agenda/api\"",
+    "build": "npm run build -w @agenda/api && npm run build -w @agenda/web",
+    "test": "npm run test -w @agenda/api && npm run test -w @agenda/web",
+    "lint": "npm run lint -w @agenda/api && npm run lint -w @agenda/web",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "start:prod": "prisma db push --skip-generate && prisma db seed && node apps/api/dist/src/main.js"
+  },
+  "dependencies": {
+    "prisma": "^6.8.2",
+    "tsx": "^4.19.4"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "prisma": { "seed": "tsx prisma/seed.ts" }
+}

@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "module": "commonjs", "target": "ES2022", "outDir": "dist", "experimentalDecorators": true, "emitDecoratorMetadata": true, "strictPropertyInitialization": false, "esModuleInterop": true },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

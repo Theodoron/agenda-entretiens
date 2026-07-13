@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum AuthProvider {
+  DEV
+  CAS
+}
+
+enum RoleCode {
+  STUDENT
+  ADVISOR
+  ADMIN
+}
+
+enum Gender {
+  WOMAN
+  MAN
+  NON_BINARY
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum AppointmentMode {
+  IN_PERSON
+  PHONE
+  VIDEO
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  HELD
+  BOOKED
+  CANCELLED
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CONFIRMED
+  COMPLETED
+  CANCELLED_BY_STUDENT
+  CANCELLED_BY_ADVISOR
+  RESCHEDULED
+  STUDENT_NO_SHOW
+  ADVISOR_NO_SHOW
+}
+
+enum AppointmentKind {
+  FIRST_WITH_SERVICE
+  FOLLOW_UP_SAME_ADVISOR
+  SEEN_OTHER_ADVISOR
+}
+
+enum Visibility {
+  INTERNAL
+  SHARED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+  CANCELLED
+}
+
+enum AttachmentScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  FAILED
+}
+
+model User {
+  id            String          @id @default(uuid()) @db.Uuid
+  email         String          @unique
+  firstName     String
+  lastName      String
+  status        UserStatus      @default(ACTIVE)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  identities    AuthIdentity[]
+  roles         UserRole[]
+  student       StudentProfile?
+  advisor       AdvisorProfile?
+  notifications Notification[]
+  auditActions  AuditLog[]      @relation("AuditActor")
+}
+
+model AuthIdentity {
+  id           String       @id @default(uuid()) @db.Uuid
+  provider     AuthProvider
+  subject      String
+  passwordHash String?
+  userId       String       @db.Uuid
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        RoleCode         @unique
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id    String           @id @default(uuid()) @db.Uuid
+  code  String           @unique
+  roles RolePermission[]
+}
+
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Component {
+  id       String           @id @default(uuid()) @db.Uuid
+  name     String           @unique
+  active   Boolean          @default(true)
+  students StudentProfile[]
+  degrees  Degree[]
+}
+
+model Degree {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String
+  componentId String           @db.Uuid
+  component   Component        @relation(fields: [componentId], references: [id])
+  students    StudentProfile[]
+
+  @@unique([componentId, name])
+}
+
+model AcademicYear {
+  id       String           @id @default(uuid()) @db.Uuid
+  label    String           @unique
+  students StudentProfile[]
+}
+
+model StudentProfile {
+  userId         String             @id @db.Uuid
+  universityId   String             @unique
+  componentId    String?            @db.Uuid
+  degreeId       String?            @db.Uuid
+  academicYearId String?            @db.Uuid
+  gender         Gender?
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  component      Component?         @relation(fields: [componentId], references: [id])
+  degree         Degree?            @relation(fields: [degreeId], references: [id])
+  academicYear   AcademicYear?      @relation(fields: [academicYearId], references: [id])
+  requests       InterviewRequest[]
+  appointments   Appointment[]
+}
+
+model AdvisorProfile {
+  userId         String         @id @db.Uuid
+  title          String?
+  active         Boolean        @default(true)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilities Availability[]
+  appointments   Appointment[]
+}
+
+model InterviewReason {
+  id       String             @id @default(uuid()) @db.Uuid
+  label    String             @unique
+  active   Boolean            @default(true)
+  requests InterviewRequest[]
+}
+
+model Location {
+  id             String         @id @default(uuid()) @db.Uuid
+  name           String         @unique
+  address        String?
+  active         Boolean        @default(true)
+  availabilities Availability[]
+}
+
+model AvailabilitySeries {
+  id             String         @id @default(uuid()) @db.Uuid
+  advisorId      String         @db.Uuid
+  timezone       String         @default("Europe/Paris")
+  recurrenceRule String
+  startsOn       DateTime       @db.Date
+  endsOn         DateTime?      @db.Date
+  createdAt      DateTime       @default(now())
+  slots          Availability[]
+}
+
+model Availability {
+  id            String              @id @default(uuid()) @db.Uuid
+  advisorId     String              @db.Uuid
+  seriesId      String?             @db.Uuid
+  locationId    String?             @db.Uuid
+  startsAt      DateTime
+  endsAt        DateTime
+  mode          AppointmentMode
+  videoUrl      String?
+  bufferMinutes Int                 @default(0)
+  status        AvailabilityStatus  @default(AVAILABLE)
+  heldByUserId  String?             @db.Uuid
+  heldUntil     DateTime?
+  version       Int                 @default(1)
+  advisor       AdvisorProfile      @relation(fields: [advisorId], references: [userId])
+  series        AvailabilitySeries? @relation(fields: [seriesId], references: [id])
+  location      Location?           @relation(fields: [locationId], references: [id])
+  appointment   Appointment?
+
+  @@index([status, startsAt])
+  @@index([advisorId, startsAt])
+}
+
+model InterviewRequest {
+  id                 String           @id @default(uuid()) @db.Uuid
+  studentId          String           @db.Uuid
+  reasonId           String           @db.Uuid
+  subject            String
+  description        String
+  preferredMode      AppointmentMode?
+  accessibilityNeeds String?
+  createdAt          DateTime         @default(now())
+  student            StudentProfile   @relation(fields: [studentId], references: [userId])
+  reason             InterviewReason  @relation(fields: [reasonId], references: [id])
+  appointment        Appointment?
+
+  @@index([studentId, createdAt])
+}
+
+model Appointment {
+  id             String                     @id @default(uuid()) @db.Uuid
+  availabilityId String                     @unique @db.Uuid
+  requestId      String                     @unique @db.Uuid
+  studentId      String                     @db.Uuid
+  advisorId      String                     @db.Uuid
+  status         AppointmentStatus          @default(BOOKED)
+  kind           AppointmentKind
+  version        Int                        @default(1)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  availability   Availability               @relation(fields: [availabilityId], references: [id])
+  request        InterviewRequest           @relation(fields: [requestId], references: [id])
+  student        StudentProfile             @relation(fields: [studentId], references: [userId])
+  advisor        AdvisorProfile             @relation(fields: [advisorId], references: [userId])
+  history        AppointmentStatusHistory[]
+  messages       Message[]
+  internalNotes  InternalNote[]
+  sharedContents SharedContent[]
+  attachments    Attachment[]
+
+  @@index([studentId, status])
+  @@index([advisorId, status])
+}
+
+model AppointmentStatusHistory {
+  id            String             @id @default(uuid()) @db.Uuid
+  appointmentId String             @db.Uuid
+  fromStatus    AppointmentStatus?
+  toStatus      AppointmentStatus
+  actorId       String             @db.Uuid
+  reason        String?
+  createdAt     DateTime           @default(now())
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, createdAt])
+}
+
+model Message {
+  id            String       @id @default(uuid()) @db.Uuid
+  appointmentId String       @db.Uuid
+  authorId      String       @db.Uuid
+  content       String
+  visibility    Visibility   @default(SHARED)
+  createdAt     DateTime     @default(now())
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  attachments   Attachment[]
+
+  @@index([appointmentId, createdAt])
+}
+
+model InternalNote {
+  id            String      @id @default(uuid()) @db.Uuid
+  appointmentId String      @db.Uuid
+  authorId      String      @db.Uuid
+  content       String
+  createdAt     DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, createdAt])
+}
+
+model SharedContent {
+  id            String      @id @default(uuid()) @db.Uuid
+  appointmentId String      @db.Uuid
+  authorId      String      @db.Uuid
+  content       String
+  createdAt     DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, createdAt])
+}
+
+model Attachment {
+  id           String     @id @default(uuid()) @db.Uuid
+  messageId    String?    @db.Uuid
+  appointmentId String    @db.Uuid
+  uploaderId   String     @db.Uuid
+  storageKey   String     @unique
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  visibility   Visibility
+  checksum     String
+  scanStatus   AttachmentScanStatus @default(PENDING)
+  scannedAt    DateTime?
+  createdAt    DateTime   @default(now())
+  message      Message?   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  appointment  Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, createdAt])
+}
+
+model Notification {
+  id               String              @id @default(uuid()) @db.Uuid
+  userId           String              @db.Uuid
+  channel          NotificationChannel
+  type             String
+  status           NotificationStatus  @default(PENDING)
+  payload          Json
+  scheduledAt      DateTime
+  sentAt           DateTime?
+  deduplicationKey String              @unique
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+}
+
+model NotificationTemplate {
+  id       String              @id @default(uuid()) @db.Uuid
+  code     String
+  channel  NotificationChannel
+  locale   String              @default("fr")
+  subject  String?
+  bodyText String
+  bodyHtml String?
+  active   Boolean             @default(true)
+  version  Int                 @default(1)
+
+  @@unique([code, channel, locale, version])
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  aggregateType String
+  aggregateId   String
+  type          String
+  payload       Json
+  occurredAt    DateTime  @default(now())
+  processedAt   DateTime?
+  attempts      Int       @default(0)
+
+  @@index([processedAt, occurredAt])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  actorId      String?  @db.Uuid
+  action       String
+  resourceType String
+  resourceId   String?
+  metadata     Json?
+  ipHash       String?
+  createdAt    DateTime @default(now())
+  actor        User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([resourceType, resourceId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

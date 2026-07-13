@@ -1,0 +1,41 @@
+import { PrismaClient, RoleCode } from '@prisma/client';
+import { hash } from 'argon2';
+
+const prisma = new PrismaClient();
+const permissions: Record<RoleCode, string[]> = {
+  STUDENT: ['profile:self:write', 'appointment:self:create', 'appointment:self:cancel', 'message:participant:write', 'file:participant:read'],
+  ADVISOR: ['profile:self:write', 'availability:self:write', 'appointment:assigned:read', 'appointment:assigned:manage', 'internal-note:assigned:write', 'shared-content:assigned:write', 'message:participant:write', 'file:participant:read', 'stats:self:read'],
+  ADMIN: ['user:manage', 'reference:manage', 'stats:global:read', 'export:run', 'audit:read', 'retention:manage'],
+};
+
+async function main() {
+  for (const label of ['Projet professionnel', 'Recherche de stage ou d’alternance', 'CV et candidature', 'Réorientation', 'Préparation à un entretien']) {
+    await prisma.interviewReason.upsert({ where: { label }, update: { active: true }, create: { label } });
+  }
+  const component = await prisma.component.upsert({ where: { name: 'UFR Sciences' }, update: {}, create: { name: 'UFR Sciences' } });
+  await prisma.degree.upsert({ where: { componentId_name: { componentId: component.id, name: 'Licence Informatique' } }, update: {}, create: { componentId: component.id, name: 'Licence Informatique' } });
+  await prisma.academicYear.upsert({ where: { label: '2026-2027' }, update: {}, create: { label: '2026-2027' } });
+  for (const [code, codes] of Object.entries(permissions) as [RoleCode, string[]][]) {
+    const role = await prisma.role.upsert({ where: { code }, update: {}, create: { code } });
+    for (const permissionCode of codes) {
+      const permission = await prisma.permission.upsert({ where: { code: permissionCode }, update: {}, create: { code: permissionCode } });
+      await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } }, update: {}, create: { roleId: role.id, permissionId: permission.id } });
+    }
+  }
+  const passwordHash = await hash('Demo-Agenda-2026!');
+  const demos: [string, string, string, RoleCode][] = [
+    ['etudiant@example.test', 'Camille', 'Martin', 'STUDENT'],
+    ['conseiller@example.test', 'Sophie', 'Bernard', 'ADVISOR'],
+    ['admin@example.test', 'Alex', 'Robert', 'ADMIN'],
+  ];
+  for (const [email, firstName, lastName, code] of demos) {
+    const user = await prisma.user.upsert({ where: { email }, update: {}, create: { email, firstName, lastName } });
+    const role = await prisma.role.findUniqueOrThrow({ where: { code } });
+    await prisma.userRole.upsert({ where: { userId_roleId: { userId: user.id, roleId: role.id } }, update: {}, create: { userId: user.id, roleId: role.id } });
+    await prisma.authIdentity.upsert({ where: { provider_subject: { provider: 'DEV', subject: email } }, update: { passwordHash }, create: { provider: 'DEV', subject: email, passwordHash, userId: user.id } });
+    if (code === 'STUDENT') await prisma.studentProfile.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id, universityId: 'U20260001' } });
+    if (code === 'ADVISOR') await prisma.advisorProfile.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id, title: 'Conseillère en orientation' } });
+  }
+}
+
+main().finally(() => prisma.$disconnect());
