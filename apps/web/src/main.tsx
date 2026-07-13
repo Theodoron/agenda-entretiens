@@ -69,11 +69,20 @@ const api = async <T,>(path: string, options?: RequestInit): Promise<T> => {
     ? (undefined as T)
     : (response.json() as Promise<T>);
 };
+const capitalizeDatePart = (value: string) =>
+  value ? value.charAt(0).toLocaleUpperCase("fr-FR") + value.slice(1) : value;
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "full",
     timeStyle: "short",
-  }).format(new Date(value));
+  })
+    .formatToParts(new Date(value))
+    .map((part) =>
+      part.type === "weekday" || part.type === "month"
+        ? capitalizeDatePart(part.value)
+        : part.value,
+    )
+    .join("");
 const active = (status: string) => ["BOOKED", "CONFIRMED"].includes(status);
 const isUpcomingAppointment = (appointment: Appointment, now = new Date()) =>
   active(appointment.status) &&
@@ -763,7 +772,7 @@ function StudentDashboard() {
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td>{formatDate(item.availability.startsAt)}</td>
+                <td className="table-date">{formatDate(item.availability.startsAt)}</td>
                 <td>{item.advisor.user.firstName} {item.advisor.user.lastName}</td>
                 <td>{item.request.subject}</td>
                 <td>{formatMode(item.availability.mode)}</td>
@@ -1018,7 +1027,7 @@ function AdvisorDashboard() {
                             : "—"}
                         </td>
                         <td>{item?.student.universityId ?? "—"}</td>
-                        <td>{formatDate(slot.startsAt)}</td>
+                        <td className="table-date">{formatDate(slot.startsAt)}</td>
                         <td>{item?.request.subject ?? "Créneau disponible"}</td>
                         <td>
                           <span className="status">
@@ -1101,7 +1110,7 @@ function AdvisorDashboard() {
                   .filter((slot) => !slot.appointment)
                   .map((slot) => (
                     <tr className="free-slot" key={slot.id}>
-                      <td>{formatDate(slot.startsAt)}</td>
+                      <td className="table-date">{formatDate(slot.startsAt)}</td>
                       <td>
                         {new Intl.DateTimeFormat("fr-FR", {
                           timeStyle: "short",
@@ -1335,10 +1344,10 @@ function AdminDashboard() {
                       </td>
                       <td>
                         {appointment.student.user.firstName} {appointment.student.user.lastName}<br />
-                        <small>{formatDate(appointment.availability.startsAt)}</small>
+                        <small className="table-date">{formatDate(appointment.availability.startsAt)}</small>
                       </td>
                       <td>{uploader}</td>
-                      <td>{formatDate(document.createdAt)}</td>
+                      <td className="table-date">{formatDate(document.createdAt)}</td>
                       <td className="table-actions">
                         <a className="download compact" href={`/api/v1/documents/${document.id}/download`}>
                           Examiner
@@ -1421,8 +1430,10 @@ type Statistics = {
   privacy: { smallCohortThreshold: number; aggregatedOnly: boolean };
 };
 const monthLabel = (month: string) =>
-  new Intl.DateTimeFormat("fr-FR", { month: "short", year: "numeric" }).format(
-    new Date(`${month}-01T12:00:00`),
+  capitalizeDatePart(
+    new Intl.DateTimeFormat("fr-FR", { month: "short", year: "numeric" }).format(
+      new Date(`${month}-01T12:00:00`),
+    ),
   );
 function StatTable({
   title,

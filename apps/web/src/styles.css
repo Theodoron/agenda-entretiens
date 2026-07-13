@@ -362,6 +362,9 @@
 .table-wrap tbody tr:last-child td {
   border-bottom: 0;
 }
+.table-date {
+  font-weight: 700;
+}
 .table-actions {
   display: flex;
   align-items: center;
