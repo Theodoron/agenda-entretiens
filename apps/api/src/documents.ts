@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Post, Req, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Post, Req, ServiceUnavailableException, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { AttachmentScanStatus, Visibility } from '@prisma/client';
@@ -15,13 +15,19 @@ class ScanResultDto { @IsEnum(AttachmentScanStatus) status!: AttachmentScanStatu
 
 @Injectable()
 export class DocumentsService {
+  private readonly storageEnabled = Boolean(process.env.S3_ENDPOINT && process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY);
   private readonly bucket = process.env.S3_BUCKET ?? 'agenda-private';
   private readonly s3 = new S3Client({ region: process.env.S3_REGION ?? 'eu-west-3', endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000', forcePathStyle: true, credentials: { accessKeyId: process.env.S3_ACCESS_KEY ?? '', secretAccessKey: process.env.S3_SECRET_KEY ?? '' } });
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
+    if (!this.storageEnabled) return;
     try { await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket })); }
     catch { await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket })); }
+  }
+
+  private requireStorage() {
+    if (!this.storageEnabled) throw new ServiceUnavailableException('Le stockage de documents n’est pas configuré sur cette démonstration');
   }
 
   private async access(userId: string, appointmentId: string) {
@@ -35,6 +41,7 @@ export class DocumentsService {
   }
 
   async upload(userId: string, appointmentId: string, file?: Express.Multer.File) {
+    this.requireStorage();
     await this.access(userId, appointmentId);
     if (!file) throw new BadRequestException('Fichier requis');
     if (!isAllowedDocumentType(file.mimetype)) throw new BadRequestException('Type de fichier non autorisé');
@@ -62,6 +69,7 @@ export class DocumentsService {
   }
 
   async download(userId: string, id: string) {
+    this.requireStorage();
     const attachment = await this.prisma.attachment.findUnique({ where: { id } });
     if (!attachment) throw new NotFoundException('Document introuvable');
     await this.access(userId, attachment.appointmentId);

@@ -1,8 +1,8 @@
-import { PrismaClient, RoleCode } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
 
 const prisma = new PrismaClient();
-const permissions: Record<RoleCode, string[]> = {
+const permissions = {
   STUDENT: ['profile:self:write', 'appointment:self:create', 'appointment:self:cancel', 'message:participant:write', 'file:participant:read'],
   ADVISOR: ['profile:self:write', 'availability:self:write', 'appointment:assigned:read', 'appointment:assigned:manage', 'internal-note:assigned:write', 'shared-content:assigned:write', 'message:participant:write', 'file:participant:read', 'stats:self:read'],
   ADMIN: ['user:manage', 'reference:manage', 'stats:global:read', 'export:run', 'audit:read', 'retention:manage'],
@@ -15,15 +15,15 @@ async function main() {
   const component = await prisma.component.upsert({ where: { name: 'UFR Sciences' }, update: {}, create: { name: 'UFR Sciences' } });
   await prisma.degree.upsert({ where: { componentId_name: { componentId: component.id, name: 'Licence Informatique' } }, update: {}, create: { componentId: component.id, name: 'Licence Informatique' } });
   await prisma.academicYear.upsert({ where: { label: '2026-2027' }, update: {}, create: { label: '2026-2027' } });
-  for (const [code, codes] of Object.entries(permissions) as [RoleCode, string[]][]) {
+  for (const [code, codes] of Object.entries(permissions)) {
     const role = await prisma.role.upsert({ where: { code }, update: {}, create: { code } });
     for (const permissionCode of codes) {
       const permission = await prisma.permission.upsert({ where: { code: permissionCode }, update: {}, create: { code: permissionCode } });
       await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } }, update: {}, create: { roleId: role.id, permissionId: permission.id } });
     }
   }
-  const passwordHash = await hash('Demo-Agenda-2026!');
-  const demos: [string, string, string, RoleCode][] = [
+  const passwordHash = await hash('Demo-Agenda-2026!', { memoryCost: 19456, timeCost: 2 });
+  const demos = [
     ['etudiant@example.test', 'Camille', 'Martin', 'STUDENT'],
     ['conseiller@example.test', 'Sophie', 'Bernard', 'ADVISOR'],
     ['admin@example.test', 'Alex', 'Robert', 'ADMIN'],

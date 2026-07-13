@@ -13,11 +13,11 @@
     "start:prod": "prisma db push --skip-generate && prisma db seed && node apps/api/dist/src/main.js"
   },
   "dependencies": {
-    "prisma": "^6.8.2",
-    "tsx": "^4.19.4"
+    "prisma": "^6.8.2"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.4"
   },
-  "prisma": { "seed": "tsx prisma/seed.ts" }
+  "prisma": { "seed": "node prisma/seed.mjs" }
 }
