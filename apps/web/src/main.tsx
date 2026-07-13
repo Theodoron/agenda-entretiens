@@ -682,87 +682,65 @@ function StudentDashboard() {
   const filteredSlots = advisorFilter
     ? slots.filter((slot) => slot.advisor.userId === advisorFilter)
     : slots;
+  const upcomingAppointments = appointments.filter((item) =>
+    isUpcomingAppointment(item),
+  );
+  const historicalAppointments = appointments.filter(
+    (item) => !isUpcomingAppointment(item),
+  );
+  function appointmentTable(items: Appointment[], emptyMessage: string) {
+    if (!items.length) return <p className="empty">{emptyMessage}</p>;
+    return (
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date et heure</th>
+              <th>Conseiller</th>
+              <th>Objet</th>
+              <th>Modalité</th>
+              <th>Statut</th>
+              <th><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>{formatDate(item.availability.startsAt)}</td>
+                <td>{item.advisor.user.firstName} {item.advisor.user.lastName}</td>
+                <td>{item.request.subject}</td>
+                <td>{formatMode(item.availability.mode)}</td>
+                <td>
+                  <span className={["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) ? "status cancelled-by-advisor" : "status"}>
+                    {formatStatus(item.status)}
+                  </span>
+                </td>
+                <td className="table-actions">
+                  {!item.status.startsWith("CANCELLED") && (
+                    <button className="link-button" onClick={() => setSheetId(item.id)}>
+                      Fiche entretien
+                    </button>
+                  )}
+                  {active(item.status) && (
+                    <button className="secondary compact" onClick={() => setCancellingId(item.id)}>
+                      Annuler
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
   return (
     <div className="dashboard">
       <section>
         <p className="eyebrow">Mes rendez-vous</p>
         <h1>Mon tableau de bord</h1>
-        {appointments.length === 0 ? (
-          <p className="empty">Vous n’avez pas encore de rendez-vous.</p>
-        ) : (
-          <div className="appointment-groups">
-            {(["À venir", "Historique"] as const).map((group) => {
-              const items = appointments.filter((item) =>
-                group === "À venir"
-                  ? isUpcomingAppointment(item)
-                  : !isUpcomingAppointment(item),
-              );
-              return (
-                <div key={group}>
-                  <h2>{group}</h2>
-                  {items.length ? (
-                    <div className="table-wrap">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Date et heure</th>
-                            <th>Conseiller</th>
-                            <th>Objet</th>
-                            <th>Modalité</th>
-                            <th>Statut</th>
-                            <th>
-                              <span className="sr-only">Actions</span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {items.map((item) => (
-                            <tr key={item.id}>
-                              <td>{formatDate(item.availability.startsAt)}</td>
-                              <td>
-                                {item.advisor.user.firstName}{" "}
-                                {item.advisor.user.lastName}
-                              </td>
-                              <td>{item.request.subject}</td>
-                              <td>{formatMode(item.availability.mode)}</td>
-                              <td>
-                                <span className={["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) ? "status cancelled-by-advisor" : "status"}>
-                                  {formatStatus(item.status)}
-                                </span>
-                              </td>
-                              <td className="table-actions">
-                                {!item.status.startsWith("CANCELLED") && (
-                                  <button
-                                    className="link-button"
-                                    onClick={() => setSheetId(item.id)}
-                                  >
-                                    Fiche entretien
-                                  </button>
-                                )}
-                                {active(item.status) && (
-                                  <button
-                                    className="secondary compact"
-                                    onClick={() => setCancellingId(item.id)}
-                                  >
-                                    Annuler
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="empty">
-                      Aucun rendez-vous {group.toLowerCase()}.
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <h2>À venir</h2>
+        {appointmentTable(upcomingAppointments, "Aucun rendez-vous à venir.")}
       </section>
       {sheetId && (
         <CommunicationsHub
@@ -778,7 +756,7 @@ function StudentDashboard() {
         />
       )}
       <section>
-        <h2>Réserver un entretien</h2>
+        <h2>Mobiliser un entretien</h2>
         {message && (
           <div className="success" role="status">
             {message}
@@ -875,6 +853,10 @@ function StudentDashboard() {
             <button>Confirmer la réservation</button>
           </form>
         )}
+      </section>
+      <section>
+        <h2>Historique</h2>
+        {appointmentTable(historicalAppointments, "Aucun rendez-vous dans l’historique.")}
       </section>
     </div>
   );
