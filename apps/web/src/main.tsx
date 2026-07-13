@@ -713,7 +713,7 @@ function StudentDashboard() {
                                 </span>
                               </td>
                               <td className="table-actions">
-                                {!["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) && (
+                                {!item.status.startsWith("CANCELLED") && (
                                   <button
                                     className="link-button"
                                     onClick={() => setSheetId(item.id)}

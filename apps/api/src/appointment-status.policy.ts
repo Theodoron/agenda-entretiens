@@ -21,7 +21,7 @@ export function assertTransition(from: AppointmentStatus, to: AppointmentStatus)
 }
 
 export function canStudentAccessAppointment(status: AppointmentStatus): boolean {
-  return status !== 'CANCELLED_BY_ADVISOR' && status !== 'CANCELLED_BY_ADMIN';
+  return !status.startsWith('CANCELLED');
 }
 
 export function isCancellationReasonValid(reason?: string): boolean {

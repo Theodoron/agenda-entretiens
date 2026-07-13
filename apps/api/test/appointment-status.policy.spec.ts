@@ -16,7 +16,7 @@ describe('machine d’états des rendez-vous', () => {
   it('masque à l’étudiant la fiche annulée par le conseiller', () => {
     expect(canStudentAccessAppointment('CANCELLED_BY_ADVISOR')).toBe(false);
     expect(canStudentAccessAppointment('CANCELLED_BY_ADMIN')).toBe(false);
-    expect(canStudentAccessAppointment('CANCELLED_BY_STUDENT')).toBe(true);
+    expect(canStudentAccessAppointment('CANCELLED_BY_STUDENT')).toBe(false);
     expect(canStudentAccessAppointment('CONFIRMED')).toBe(true);
   });
   it('exige un motif exploitable pour une annulation conseiller', () => {
