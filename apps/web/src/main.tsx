@@ -1148,6 +1148,22 @@ type AdminUser = {
   status: "ACTIVE" | "DISABLED";
   roles: { role: { code: Role } }[];
 };
+type PendingDocument = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploaderId: string;
+  createdAt: string;
+  appointment: {
+    id: string;
+    studentId: string;
+    advisorId: string;
+    availability: { startsAt: string };
+    student: { user: { firstName: string; lastName: string } };
+    advisor: { user: { firstName: string; lastName: string } };
+  };
+};
 function AdminDashboard() {
   const [overview, setOverview] = useState<{
     users: number;
@@ -1156,14 +1172,17 @@ function AdminDashboard() {
     failedNotifications: number;
   }>();
   const [users, setUsers] = useState<AdminUser[]>([]),
+    [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([]),
     [error, setError] = useState("");
   const reload = () =>
     Promise.all([
       api<any>("/admin/overview"),
       api<AdminUser[]>("/admin/users"),
-    ]).then(([stats, items]) => {
+      api<PendingDocument[]>("/admin/documents/pending"),
+    ]).then(([stats, items, documents]) => {
       setOverview(stats);
       setUsers(items);
+      setPendingDocuments(documents);
     });
   useEffect(() => {
     reload().catch((value) => setError(value.message));
@@ -1175,6 +1194,20 @@ function AdminDashboard() {
         body: JSON.stringify({
           status: user.status === "ACTIVE" ? "DISABLED" : "ACTIVE",
         }),
+      });
+      await reload();
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
+  async function reviewDocument(document: PendingDocument, status: "CLEAN" | "FAILED") {
+    const action = status === "CLEAN" ? "déclarer ce document sûr" : "rejeter ce document";
+    if (!window.confirm(`Voulez-vous ${action} ?`)) return;
+    setError("");
+    try {
+      await api(`/documents/${document.id}/scan-result`, {
+        method: "POST",
+        body: JSON.stringify({ status }),
       });
       await reload();
     } catch (value) {
@@ -1210,6 +1243,64 @@ function AdminDashboard() {
               <p>notifications en échec</p>
             </article>
           </div>
+        )}
+      </section>
+      <section>
+        <h2>Documents à valider</h2>
+        <p className="notice">
+          Examinez uniquement des fichiers attendus. Un document déclaré sûr devient téléchargeable par les participants à l’entretien.
+        </p>
+        {pendingDocuments.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Entretien</th>
+                  <th>Déposé par</th>
+                  <th>Date du dépôt</th>
+                  <th><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingDocuments.map((document) => {
+                  const appointment = document.appointment;
+                  const uploader = document.uploaderId === appointment.studentId
+                    ? `${appointment.student.user.firstName} ${appointment.student.user.lastName}`
+                    : document.uploaderId === appointment.advisorId
+                      ? `${appointment.advisor.user.firstName} ${appointment.advisor.user.lastName}`
+                      : "Administrateur";
+                  return (
+                    <tr key={document.id}>
+                      <td>
+                        <strong>{document.originalName}</strong><br />
+                        <small>{Math.ceil(document.sizeBytes / 1024)} Ko · {document.mimeType}</small>
+                      </td>
+                      <td>
+                        {appointment.student.user.firstName} {appointment.student.user.lastName}<br />
+                        <small>{formatDate(appointment.availability.startsAt)}</small>
+                      </td>
+                      <td>{uploader}</td>
+                      <td>{formatDate(document.createdAt)}</td>
+                      <td className="table-actions">
+                        <a className="download compact" href={`/api/v1/documents/${document.id}/download`}>
+                          Examiner
+                        </a>
+                        <button className="compact" onClick={() => reviewDocument(document, "CLEAN")}>
+                          Déclarer sûr
+                        </button>
+                        <button className="secondary compact" onClick={() => reviewDocument(document, "FAILED")}>
+                          Rejeter
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="empty">Aucun document en attente de validation.</p>
         )}
       </section>
       <section>

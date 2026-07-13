@@ -5,7 +5,7 @@ import { AttachmentScanStatus, Visibility } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
 import { IsEnum } from 'class-validator';
 import type { Request } from 'express';
-import { requireUserId } from './current-user';
+import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
 import { canStudentAccessAppointment } from './appointment-status.policy';
 
@@ -61,21 +61,52 @@ export class DocumentsService {
     return this.prisma.attachment.findMany({ where: { appointmentId, ...(access.isStudent ? { scanStatus: 'CLEAN' } : {}) }, select: { id: true, originalName: true, mimeType: true, sizeBytes: true, scanStatus: true, scannedAt: true, createdAt: true, uploaderId: true }, orderBy: { createdAt: 'asc' } });
   }
 
+  async pending(userId: string) {
+    await requireRole(this.prisma, userId, 'ADMIN');
+    return this.prisma.attachment.findMany({
+      where: { scanStatus: 'PENDING' },
+      select: {
+        id: true,
+        originalName: true,
+        mimeType: true,
+        sizeBytes: true,
+        uploaderId: true,
+        createdAt: true,
+        appointment: {
+          select: {
+            id: true,
+            studentId: true,
+            advisorId: true,
+            availability: { select: { startsAt: true } },
+            student: { select: { user: { select: { firstName: true, lastName: true } } } },
+            advisor: { select: { user: { select: { firstName: true, lastName: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    });
+  }
+
   async scan(userId: string, id: string, status: AttachmentScanStatus) {
     const attachment = await this.prisma.attachment.findUnique({ where: { id } });
     if (!attachment) throw new NotFoundException('Document introuvable');
     const access = await this.access(userId, attachment.appointmentId);
     if (!access.isAdmin) throw new ForbiddenException('Validation réservée au service d’analyse');
     if (status === 'PENDING') throw new BadRequestException('Résultat d’analyse invalide');
-    return this.prisma.attachment.update({ where: { id }, data: { scanStatus: status, scannedAt: new Date() } });
+    return this.prisma.$transaction(async tx => {
+      const updated = await tx.attachment.update({ where: { id }, data: { scanStatus: status, scannedAt: new Date() } });
+      await tx.auditLog.create({ data: { actorId: userId, action: 'attachment.reviewed', resourceType: 'Attachment', resourceId: id, metadata: { status } } });
+      return updated;
+    });
   }
 
   async download(userId: string, id: string) {
     this.requireStorage();
     const attachment = await this.prisma.attachment.findUnique({ where: { id } });
     if (!attachment) throw new NotFoundException('Document introuvable');
-    await this.access(userId, attachment.appointmentId);
-    if (attachment.scanStatus !== 'CLEAN') throw new ForbiddenException('Le document n’est pas disponible avant la fin de son analyse');
+    const access = await this.access(userId, attachment.appointmentId);
+    if (attachment.scanStatus !== 'CLEAN' && !access.isAdmin) throw new ForbiddenException('Le document n’est pas disponible avant la fin de son analyse');
     const object = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: attachment.storageKey }));
     if (!object.Body) throw new NotFoundException('Fichier introuvable dans le stockage');
     return { attachment, body: object.Body.transformToWebStream() };
@@ -88,6 +119,7 @@ export class DocumentsController {
   @Post('appointments/:appointmentId/documents') @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   upload(@Req() req: Request, @Param('appointmentId') id: string, @UploadedFile() file?: Express.Multer.File) { return this.documents.upload(requireUserId(req), id, file); }
   @Get('appointments/:appointmentId/documents') list(@Req() req: Request, @Param('appointmentId') id: string) { return this.documents.list(requireUserId(req), id); }
+  @Get('admin/documents/pending') pending(@Req() req: Request) { return this.documents.pending(requireUserId(req)); }
   @Post('documents/:id/scan-result') scan(@Req() req: Request, @Param('id') id: string, @Body() dto: ScanResultDto) { return this.documents.scan(requireUserId(req), id, dto.status); }
   @Get('documents/:id/download') async download(@Req() req: Request, @Param('id') id: string) { const result = await this.documents.download(requireUserId(req), id); return new StreamableFile(result.body as any, { type: result.attachment.mimeType, disposition: `attachment; filename*=UTF-8''${encodeURIComponent(result.attachment.originalName)}` }); }
 }
