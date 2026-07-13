@@ -1,10 +1,11 @@
-import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, Injectable, Param, Patch, Post, Req } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Patch, Post, Req } from '@nestjs/common';
 import { AppointmentMode, AppointmentStatus, Prisma } from '@prisma/client';
 import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
+import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
-import { canTransition } from './appointment-status.policy';
+import { canStudentAccessAppointment, canTransition, isAdvisorCancellationReasonValid } from './appointment-status.policy';
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
@@ -16,12 +17,45 @@ class BookAppointmentDto {
 }
 class ChangeStatusDto {
   @IsEnum(AppointmentStatus) status!: AppointmentStatus;
-  @IsOptional() @IsString() @MaxLength(500) reason?: string;
+  @IsOptional() @IsString() @MinLength(3) @MaxLength(500) reason?: string;
 }
 
 @Injectable()
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async notifyAdvisorCancellation(eventId: string, studentId: string, appointmentId: string, startsAt: Date, reason: string) {
+    const student = await this.prisma.user.findUnique({ where: { id: studentId }, select: { email: true, firstName: true } });
+    if (!student) return;
+    const deduplicationKey = `${eventId}:${studentId}:email`;
+    const notification = await this.prisma.notification.upsert({
+      where: { deduplicationKey },
+      update: {},
+      create: { userId: studentId, channel: 'EMAIL', type: 'appointment.cancelled_by_advisor', status: 'PENDING', payload: { appointmentId, reason }, scheduledAt: new Date(), deduplicationKey },
+    });
+    if (notification.status === 'SENT') return;
+    const host = process.env.SMTP_HOST;
+    if (!host) {
+      await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
+      return;
+    }
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASSWORD;
+    const mailer = nodemailer.createTransport({ host, port, secure: port === 465, connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 15_000, ...(user && pass ? { auth: { user, pass } } : {}) });
+    try {
+      const formattedDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(startsAt);
+      await mailer.sendMail({
+        from: process.env.MAIL_FROM ?? 'Service orientation <orientation@example.test>',
+        to: student.email,
+        subject: 'Annulation de votre entretien',
+        text: `Bonjour ${student.firstName},\n\nVotre entretien prévu le ${formattedDate} a été annulé par votre conseiller.\n\nMotif : ${reason}\n\nVous pouvez réserver un nouveau créneau depuis votre espace CIDO.`,
+      });
+      await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'SENT', sentAt: new Date() } });
+    } catch {
+      await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
+    }
+  }
 
   async book(studentId: string, dto: BookAppointmentDto) {
     await requireRole(this.prisma, studentId, 'STUDENT');
@@ -47,7 +81,7 @@ export class AppointmentsService {
   }
 
   async changeStatus(userId: string, id: string, dto: ChangeStatusDto) {
-    const appointment = await this.prisma.appointment.findUnique({ where: { id } });
+    const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: true } });
     if (!appointment) throw new BadRequestException('Rendez-vous introuvable');
     const isStudent = appointment.studentId === userId;
     const isAdvisor = appointment.advisorId === userId;
@@ -55,14 +89,18 @@ export class AppointmentsService {
     if (!isStudent && !isAdvisor && !isAdmin) throw new ForbiddenException();
     if (isStudent && dto.status !== 'CANCELLED_BY_STUDENT') throw new ForbiddenException('Un étudiant peut uniquement annuler son rendez-vous');
     if (isAdvisor && dto.status === 'CANCELLED_BY_STUDENT') throw new ForbiddenException();
+    const reason = dto.reason?.trim();
+    if (dto.status === 'CANCELLED_BY_ADVISOR' && !isAdvisorCancellationReasonValid(reason)) throw new BadRequestException('Le motif d’annulation est obligatoire');
     if (!canTransition(appointment.status, dto.status)) throw new BadRequestException(`Transition interdite : ${appointment.status} vers ${dto.status}`);
-    return this.prisma.$transaction(async tx => {
+    const result = await this.prisma.$transaction(async tx => {
       const updated = await tx.appointment.update({ where: { id, version: appointment.version }, data: { status: dto.status, version: { increment: 1 } } });
       if (dto.status.startsWith('CANCELLED')) await tx.availability.update({ where: { id: appointment.availabilityId }, data: { status: 'CANCELLED', version: { increment: 1 } } });
-      await tx.appointmentStatusHistory.create({ data: { appointmentId: id, fromStatus: appointment.status, toStatus: dto.status, actorId: userId, reason: dto.reason ?? null } });
-      await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: id, type: 'appointment.status_changed', payload: { appointmentId: id, fromStatus: appointment.status, toStatus: dto.status } } });
-      return updated;
+      await tx.appointmentStatusHistory.create({ data: { appointmentId: id, fromStatus: appointment.status, toStatus: dto.status, actorId: userId, reason: reason ?? null } });
+      const event = await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: id, type: 'appointment.status_changed', payload: { appointmentId: id, studentId: appointment.studentId, advisorId: appointment.advisorId, fromStatus: appointment.status, toStatus: dto.status, ...(reason ? { reason } : {}) } } });
+      return { updated, eventId: event.id };
     });
+    if (dto.status === 'CANCELLED_BY_ADVISOR' && reason) await this.notifyAdvisorCancellation(result.eventId, appointment.studentId, id, appointment.availability.startsAt, reason);
+    return result.updated;
   }
 
   async mine(userId: string) {
@@ -75,8 +113,9 @@ export class AppointmentsService {
   async one(userId: string, id: string) {
     const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: { include: { location: true } }, request: { include: { reason: true } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } } } }, history: { orderBy: { createdAt: 'asc' } }, messages: { where: { visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } }, sharedContents: true } });
     if (!appointment) throw new BadRequestException('Rendez-vous introuvable');
-    const isAdmin = await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
+    const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     if (!isAdmin && appointment.studentId !== userId && appointment.advisorId !== userId) throw new BadRequestException('Rendez-vous introuvable');
+    if (!isAdmin && appointment.studentId === userId && !canStudentAccessAppointment(appointment.status)) throw new NotFoundException('Fiche entretien indisponible');
     return appointment;
   }
   async studentHistory(userId: string, studentId: string) {

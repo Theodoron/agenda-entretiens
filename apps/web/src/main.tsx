@@ -626,17 +626,19 @@ function StudentDashboard() {
                               <td>{item.request.subject}</td>
                               <td>{formatMode(item.availability.mode)}</td>
                               <td>
-                                <span className="status">
+                                <span className={item.status === "CANCELLED_BY_ADVISOR" ? "status cancelled-by-advisor" : "status"}>
                                   {formatStatus(item.status)}
                                 </span>
                               </td>
                               <td className="table-actions">
-                                <button
-                                  className="link-button"
-                                  onClick={() => setSheetId(item.id)}
-                                >
-                                  Fiche entretien
-                                </button>
+                                {item.status !== "CANCELLED_BY_ADVISOR" && (
+                                  <button
+                                    className="link-button"
+                                    onClick={() => setSheetId(item.id)}
+                                  >
+                                    Fiche entretien
+                                  </button>
+                                )}
                                 {active(item.status) && (
                                   <button
                                     className="secondary compact"
@@ -811,16 +813,25 @@ function AdvisorDashboard() {
       setNotice((value as Error).message);
     }
   }
-  async function changeStatus(id: string, status: string) {
+  async function changeStatus(id: string, status: string, reason?: string) {
     try {
       await api(`/appointments/${id}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
       });
       await reload();
     } catch (value) {
       setNotice((value as Error).message);
     }
+  }
+  async function cancelAppointment(id: string) {
+    const reason = window.prompt("Motif de l’annulation communiqué à l’étudiant :");
+    if (reason === null) return;
+    if (reason.trim().length < 3) {
+      setNotice("Le motif d’annulation est obligatoire.");
+      return;
+    }
+    await changeStatus(id, "CANCELLED_BY_ADVISOR", reason.trim());
   }
   async function cancelSlot(id: string) {
     if (!window.confirm("Annuler ce créneau libre ?")) return;
@@ -911,12 +922,7 @@ function AdvisorDashboard() {
                               {active(item.status) && (
                                 <button
                                   className="secondary compact"
-                                  onClick={() =>
-                                    changeStatus(
-                                      item.id,
-                                      "CANCELLED_BY_ADVISOR",
-                                    )
-                                  }
+                                  onClick={() => cancelAppointment(item.id)}
                                 >
                                   Annuler
                                 </button>

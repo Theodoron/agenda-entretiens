@@ -18,3 +18,12 @@ export function canTransition(from: AppointmentStatus, to: AppointmentStatus): b
 export function assertTransition(from: AppointmentStatus, to: AppointmentStatus): void {
   if (!canTransition(from, to)) throw new Error(`Transition de statut interdite : ${from} -> ${to}`);
 }
+
+export function canStudentAccessAppointment(status: AppointmentStatus): boolean {
+  return status !== 'CANCELLED_BY_ADVISOR';
+}
+
+export function isAdvisorCancellationReasonValid(reason?: string): boolean {
+  const length = reason?.trim().length ?? 0;
+  return length >= 3 && length <= 500;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertTransition, canTransition } from '../src/appointment-status.policy';
+import { assertTransition, canStudentAccessAppointment, canTransition, isAdvisorCancellationReasonValid } from '../src/appointment-status.policy';
 
 describe('machine d’états des rendez-vous', () => {
   it('autorise le parcours nominal', () => {
@@ -12,5 +12,15 @@ describe('machine d’états des rendez-vous', () => {
   });
   it('interdit de terminer un rendez-vous non confirmé', () => {
     expect(canTransition('BOOKED', 'COMPLETED')).toBe(false);
+  });
+  it('masque à l’étudiant la fiche annulée par le conseiller', () => {
+    expect(canStudentAccessAppointment('CANCELLED_BY_ADVISOR')).toBe(false);
+    expect(canStudentAccessAppointment('CANCELLED_BY_STUDENT')).toBe(true);
+    expect(canStudentAccessAppointment('CONFIRMED')).toBe(true);
+  });
+  it('exige un motif exploitable pour une annulation conseiller', () => {
+    expect(isAdvisorCancellationReasonValid('Indisponibilité exceptionnelle')).toBe(true);
+    expect(isAdvisorCancellationReasonValid('  ')).toBe(false);
+    expect(isAdvisorCancellationReasonValid()).toBe(false);
   });
 });

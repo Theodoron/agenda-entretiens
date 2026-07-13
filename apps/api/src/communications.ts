@@ -3,6 +3,7 @@ import { IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import { requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
+import { canStudentAccessAppointment } from './appointment-status.policy';
 
 class ContentDto {
   @IsString() @MinLength(1) @MaxLength(4000) content!: string;
@@ -23,12 +24,13 @@ export class CommunicationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async access(userId: string, appointmentId: string) {
-    const appointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId }, select: { id: true, studentId: true, advisorId: true } });
+    const appointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId }, select: { id: true, studentId: true, advisorId: true, status: true } });
     if (!appointment) throw new NotFoundException('Rendez-vous introuvable');
     const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     const isStudent = appointment.studentId === userId;
     const isAdvisor = appointment.advisorId === userId;
     if (!isStudent && !isAdvisor && !isAdmin) throw new NotFoundException('Rendez-vous introuvable');
+    if (isStudent && !canStudentAccessAppointment(appointment.status)) throw new NotFoundException('Fiche entretien indisponible');
     return { appointment, isStudent, isAdvisor, isAdmin };
   }
 

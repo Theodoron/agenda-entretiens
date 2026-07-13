@@ -78,6 +78,19 @@ Le fichier `.env` est ignoré et ne doit jamais être envoyé sur GitHub.
    STUDENT_CANCELLATION_HOURS=24
    ```
 
+Pour tester réellement l’email envoyé lors d’une annulation par le conseiller, ajouter les variables SMTP fournies par le prestataire de messagerie et une adresse étudiante de réception :
+
+   ```text
+   DEMO_STUDENT_EMAIL=<adresse réelle utilisée pour la démonstration>
+   SMTP_HOST=<serveur SMTP>
+   SMTP_PORT=587
+   SMTP_USER=<identifiant SMTP>
+   SMTP_PASSWORD=<mot de passe ou clé SMTP>
+   MAIL_FROM=Service orientation <adresse-expéditrice-autorisée>
+   ```
+
+`SMTP_PASSWORD` doit être enregistré comme secret Koyeb. `DEMO_STUDENT_EMAIL` modifie uniquement l’adresse de notification du compte étudiant ; l’identifiant de connexion reste `etudiant@example.test`.
+
 Pour générer `SESSION_SECRET` dans PowerShell :
 
 ```powershell

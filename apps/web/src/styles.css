@@ -574,6 +574,10 @@ button:hover {
   font-size: 0.78rem;
   font-weight: 700;
 }
+.status.cancelled-by-advisor {
+  background: #fee2e2;
+  color: #b42318;
+}
 .empty {
   padding: 1.2rem;
   border-radius: 14px;

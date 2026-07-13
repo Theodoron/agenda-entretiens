@@ -7,6 +7,7 @@ import { IsEnum } from 'class-validator';
 import type { Request } from 'express';
 import { requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
+import { canStudentAccessAppointment } from './appointment-status.policy';
 
 const allowedTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'text/plain']);
 export const isAllowedDocumentType = (mimeType: string) => allowedTypes.has(mimeType);
@@ -31,12 +32,13 @@ export class DocumentsService {
   }
 
   private async access(userId: string, appointmentId: string) {
-    const appointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId }, select: { studentId: true, advisorId: true } });
+    const appointment = await this.prisma.appointment.findUnique({ where: { id: appointmentId }, select: { studentId: true, advisorId: true, status: true } });
     if (!appointment) throw new NotFoundException('Rendez-vous introuvable');
     const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     const isAdvisor = appointment.advisorId === userId;
     const isStudent = appointment.studentId === userId;
     if (!isAdmin && !isAdvisor && !isStudent) throw new NotFoundException('Rendez-vous introuvable');
+    if (isStudent && !canStudentAccessAppointment(appointment.status)) throw new NotFoundException('Fiche entretien indisponible');
     return { isAdmin, isAdvisor, isStudent };
   }
 
