@@ -313,6 +313,14 @@
   color: #4e2a84;
   font-weight: 700;
 }
+.danger {
+  background: #fff;
+  color: #a12e3f;
+  border: 1px solid #d9a5ad;
+}
+.danger:hover {
+  background: #fff3f5;
+}
 .compact {
   width: auto;
   margin: 0;

@@ -1,6 +1,6 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Post, Req, ServiceUnavailableException, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Injectable, NotFoundException, Param, Post, Req, ServiceUnavailableException, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { AttachmentScanStatus, Visibility } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
 import { IsEnum } from 'class-validator';
@@ -112,6 +112,20 @@ export class DocumentsService {
     const body = Buffer.from(await object.Body.transformToByteArray());
     return { attachment, body };
   }
+
+  async remove(userId: string, id: string) {
+    this.requireStorage();
+    const attachment = await this.prisma.attachment.findUnique({ where: { id } });
+    if (!attachment) throw new NotFoundException('Document introuvable');
+    const access = await this.access(userId, attachment.appointmentId);
+    if (!access.isAdvisor) throw new ForbiddenException('Suppression réservée au conseiller responsable de l’entretien');
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: attachment.storageKey }));
+    await this.prisma.$transaction(async tx => {
+      await tx.attachment.delete({ where: { id } });
+      await tx.auditLog.create({ data: { actorId: userId, action: 'attachment.deleted', resourceType: 'Attachment', resourceId: id, metadata: { appointmentId: attachment.appointmentId, originalName: attachment.originalName } } });
+    });
+    return { deleted: true };
+  }
 }
 
 @Controller('v1')
@@ -123,4 +137,5 @@ export class DocumentsController {
   @Get('admin/documents/pending') pending(@Req() req: Request) { return this.documents.pending(requireUserId(req)); }
   @Post('documents/:id/scan-result') scan(@Req() req: Request, @Param('id') id: string, @Body() dto: ScanResultDto) { return this.documents.scan(requireUserId(req), id, dto.status); }
   @Get('documents/:id/download') async download(@Req() req: Request, @Param('id') id: string) { const result = await this.documents.download(requireUserId(req), id); return new StreamableFile(result.body, { type: result.attachment.mimeType, disposition: `attachment; filename*=UTF-8''${encodeURIComponent(result.attachment.originalName)}`, length: result.body.length }); }
+  @Delete('documents/:id') remove(@Req() req: Request, @Param('id') id: string) { return this.documents.remove(requireUserId(req), id); }
 }

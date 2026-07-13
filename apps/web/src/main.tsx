@@ -265,6 +265,16 @@ function CommunicationsHub({
     setFile(undefined);
     await reload();
   }
+  async function removeDocument(item: DocumentItem) {
+    if (!window.confirm(`Supprimer définitivement le document « ${item.originalName} » ?`)) return;
+    setError("");
+    try {
+      await api(`/documents/${item.id}`, { method: "DELETE" });
+      await reload();
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
   return (
     <section className="communications">
       <div className="sheet-heading">
@@ -446,6 +456,14 @@ function CommunicationsHub({
                   >
                     Télécharger
                   </a>
+                )}
+                {role === "advisor" && (
+                  <button
+                    className="danger compact"
+                    onClick={() => removeDocument(item)}
+                  >
+                    Supprimer
+                  </button>
                 )}
               </li>
             ))}
