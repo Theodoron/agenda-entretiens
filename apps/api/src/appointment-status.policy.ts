@@ -28,3 +28,7 @@ export function isCancellationReasonValid(reason?: string): boolean {
   const length = reason?.trim().length ?? 0;
   return length >= 3 && length <= 500;
 }
+
+export function shouldRepublishAvailability(status: AppointmentStatus, startsAt: Date, now = new Date()): boolean {
+  return status === 'CANCELLED_BY_STUDENT' && startsAt > now;
+}

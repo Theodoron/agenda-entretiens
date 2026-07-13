@@ -5,7 +5,7 @@ import type { Request } from 'express';
 import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
-import { canStudentAccessAppointment, canTransition, isCancellationReasonValid } from './appointment-status.policy';
+import { canStudentAccessAppointment, canTransition, isCancellationReasonValid, shouldRepublishAvailability } from './appointment-status.policy';
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
@@ -95,9 +95,28 @@ export class AppointmentsService {
     if (!canTransition(appointment.status, dto.status)) throw new BadRequestException(`Transition interdite : ${appointment.status} vers ${dto.status}`);
     const result = await this.prisma.$transaction(async tx => {
       const updated = await tx.appointment.update({ where: { id, version: appointment.version }, data: { status: dto.status, version: { increment: 1 } } });
-      if (dto.status.startsWith('CANCELLED')) await tx.availability.update({ where: { id: appointment.availabilityId }, data: { status: 'CANCELLED', version: { increment: 1 } } });
+      let replacementAvailabilityId: string | undefined;
+      if (dto.status.startsWith('CANCELLED')) {
+        await tx.availability.update({ where: { id: appointment.availabilityId }, data: { status: 'CANCELLED', heldByUserId: null, heldUntil: null, version: { increment: 1 } } });
+        if (shouldRepublishAvailability(dto.status, appointment.availability.startsAt)) {
+          const replacement = await tx.availability.create({
+            data: {
+              advisorId: appointment.availability.advisorId,
+              seriesId: appointment.availability.seriesId,
+              locationId: appointment.availability.locationId,
+              startsAt: appointment.availability.startsAt,
+              endsAt: appointment.availability.endsAt,
+              mode: appointment.availability.mode,
+              videoUrl: appointment.availability.videoUrl,
+              bufferMinutes: appointment.availability.bufferMinutes,
+              status: 'AVAILABLE',
+            },
+          });
+          replacementAvailabilityId = replacement.id;
+        }
+      }
       await tx.appointmentStatusHistory.create({ data: { appointmentId: id, fromStatus: appointment.status, toStatus: dto.status, actorId: userId, reason: reason ?? null } });
-      const event = await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: id, type: 'appointment.status_changed', payload: { appointmentId: id, studentId: appointment.studentId, advisorId: appointment.advisorId, fromStatus: appointment.status, toStatus: dto.status, ...(reason ? { reason } : {}) } } });
+      const event = await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: id, type: 'appointment.status_changed', payload: { appointmentId: id, studentId: appointment.studentId, advisorId: appointment.advisorId, fromStatus: appointment.status, toStatus: dto.status, ...(reason ? { reason } : {}), ...(replacementAvailabilityId ? { replacementAvailabilityId } : {}) } } });
       return { updated, eventId: event.id };
     });
     if ((dto.status === 'CANCELLED_BY_ADVISOR' || dto.status === 'CANCELLED_BY_ADMIN') && reason) {
