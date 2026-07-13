@@ -132,6 +132,43 @@
   color: #675d70;
   white-space: nowrap;
 }
+.history-cancellation {
+  display: block;
+  margin-top: 0.3rem;
+  color: #b42318;
+  font-size: 0.9rem;
+}
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(31, 20, 43, 0.55);
+}
+.cancellation-dialog {
+  width: min(560px, 100%);
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(31, 20, 43, 0.25);
+}
+.cancellation-dialog form {
+  width: 100%;
+  max-width: none;
+  margin: 1rem 0 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.dialog-actions button {
+  width: auto;
+  margin: 0;
+}
 .sheet-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -27,6 +27,7 @@ type Appointment = {
     universityId: string;
     user: { firstName: string; lastName: string };
   };
+  history?: { toStatus: string; reason?: string | null; createdAt: string }[];
 };
 type AdvisorSlot = {
   id: string;
@@ -84,6 +85,7 @@ const formatStatus = (status: string) =>
     COMPLETED: "Réalisé",
     CANCELLED_BY_STUDENT: "Annulé par l’étudiant",
     CANCELLED_BY_ADVISOR: "Annulé par le conseiller",
+    CANCELLED_BY_ADMIN: "Annulé par l’administrateur",
     RESCHEDULED: "Reporté",
     STUDENT_NO_SHOW: "Étudiant absent",
     ADVISOR_NO_SHOW: "Conseiller absent",
@@ -112,6 +114,58 @@ type DocumentItem = {
   sizeBytes: number;
   scanStatus: "PENDING" | "CLEAN" | "INFECTED" | "FAILED";
 };
+
+function CancellationDialog({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: (reason: string) => Promise<boolean>;
+}) {
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setSubmitting(true);
+    const succeeded = await onConfirm(reason.trim());
+    setSubmitting(false);
+    if (succeeded) onClose();
+  }
+  return (
+    <div className="dialog-backdrop">
+      <section
+        aria-labelledby="cancellation-title"
+        aria-modal="true"
+        className="cancellation-dialog"
+        role="dialog"
+      >
+        <h2 id="cancellation-title">Annuler l’entretien</h2>
+        <p>Le motif sera conservé dans l’historique de l’entretien.</p>
+        <form onSubmit={submit}>
+          <label>
+            Motif de l’annulation
+            <textarea
+              autoFocus
+              maxLength={500}
+              minLength={3}
+              onChange={(event) => setReason(event.target.value)}
+              required
+              value={reason}
+            />
+          </label>
+          <div className="dialog-actions">
+            <button className="secondary" disabled={submitting} onClick={onClose} type="button">
+              Conserver l’entretien
+            </button>
+            <button disabled={submitting || reason.trim().length < 3} type="submit">
+              {submitting ? "Annulation…" : "Confirmer l’annulation"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
 
 function CommunicationsHub({
   role,
@@ -269,6 +323,16 @@ function CommunicationsHub({
                   {formatDate(item.availability.startsAt)} —{" "}
                   {item.request.subject}
                 </button>
+                {(() => {
+                  const cancellations = item.history?.filter((entry) => entry.toStatus.startsWith("CANCELLED")) ?? [];
+                  const cancellation = cancellations[cancellations.length - 1];
+                  return cancellation ? (
+                    <span className="history-cancellation">
+                      <strong>{formatStatus(cancellation.toStatus)}</strong>
+                      {cancellation.reason && <> — Motif : {cancellation.reason}</>}
+                    </span>
+                  ) : null;
+                })()}
               </li>
             ))}
           </ul>
@@ -518,7 +582,8 @@ function StudentDashboard() {
     [description, setDescription] = useState("");
   const [message, setMessage] = useState(""),
     [error, setError] = useState(""),
-    [sheetId, setSheetId] = useState("");
+    [sheetId, setSheetId] = useState(""),
+    [cancellingId, setCancellingId] = useState("");
   const reload = () =>
     Promise.all([
       api<Slot[]>("/availabilities"),
@@ -571,17 +636,18 @@ function StudentDashboard() {
       setError((value as Error).message);
     }
   }
-  async function cancel(id: string) {
-    if (!window.confirm("Annuler définitivement ce rendez-vous ?")) return;
+  async function cancel(id: string, reason: string) {
     try {
       await api(`/appointments/${id}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status: "CANCELLED_BY_STUDENT" }),
+        body: JSON.stringify({ status: "CANCELLED_BY_STUDENT", reason }),
       });
       setMessage("Rendez-vous annulé.");
       await reload();
+      return true;
     } catch (value) {
       setError((value as Error).message);
+      return false;
     }
   }
   const advisors = Array.from(
@@ -639,12 +705,12 @@ function StudentDashboard() {
                               <td>{item.request.subject}</td>
                               <td>{formatMode(item.availability.mode)}</td>
                               <td>
-                                <span className={item.status === "CANCELLED_BY_ADVISOR" ? "status cancelled-by-advisor" : "status"}>
+                                <span className={["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) ? "status cancelled-by-advisor" : "status"}>
                                   {formatStatus(item.status)}
                                 </span>
                               </td>
                               <td className="table-actions">
-                                {item.status !== "CANCELLED_BY_ADVISOR" && (
+                                {!["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) && (
                                   <button
                                     className="link-button"
                                     onClick={() => setSheetId(item.id)}
@@ -655,7 +721,7 @@ function StudentDashboard() {
                                 {active(item.status) && (
                                   <button
                                     className="secondary compact"
-                                    onClick={() => cancel(item.id)}
+                                    onClick={() => setCancellingId(item.id)}
                                   >
                                     Annuler
                                   </button>
@@ -682,6 +748,12 @@ function StudentDashboard() {
           role="student"
           appointmentId={sheetId}
           onClose={() => setSheetId("")}
+        />
+      )}
+      {cancellingId && (
+        <CancellationDialog
+          onClose={() => setCancellingId("")}
+          onConfirm={(reason) => cancel(cancellingId, reason)}
         />
       )}
       <section>
@@ -795,7 +867,8 @@ function AdvisorDashboard() {
     [mode, setMode] = useState("IN_PERSON"),
     [videoUrl, setVideoUrl] = useState(""),
     [notice, setNotice] = useState(""),
-    [sheetId, setSheetId] = useState("");
+    [sheetId, setSheetId] = useState(""),
+    [cancellingId, setCancellingId] = useState("");
   const reload = () =>
     api<AdvisorSlot[]>("/availabilities/advisor/mine").then(setSchedule);
   useEffect(() => {
@@ -833,18 +906,11 @@ function AdvisorDashboard() {
         body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
       });
       await reload();
+      return true;
     } catch (value) {
       setNotice((value as Error).message);
+      return false;
     }
-  }
-  async function cancelAppointment(id: string) {
-    const reason = window.prompt("Motif de l’annulation communiqué à l’étudiant :");
-    if (reason === null) return;
-    if (reason.trim().length < 3) {
-      setNotice("Le motif d’annulation est obligatoire.");
-      return;
-    }
-    await changeStatus(id, "CANCELLED_BY_ADVISOR", reason.trim());
   }
   async function cancelSlot(id: string) {
     if (!window.confirm("Annuler ce créneau libre ?")) return;
@@ -935,7 +1001,7 @@ function AdvisorDashboard() {
                               {active(item.status) && (
                                 <button
                                   className="secondary compact"
-                                  onClick={() => cancelAppointment(item.id)}
+                                  onClick={() => setCancellingId(item.id)}
                                 >
                                   Annuler
                                 </button>
@@ -957,6 +1023,12 @@ function AdvisorDashboard() {
             role="advisor"
             appointmentId={sheetId}
             onClose={() => setSheetId("")}
+          />
+        )}
+        {cancellingId && (
+          <CancellationDialog
+            onClose={() => setCancellingId("")}
+            onConfirm={(reason) => changeStatus(cancellingId, "CANCELLED_BY_ADVISOR", reason)}
           />
         )}
         <h2 className="subsection-title">Créneaux libres</h2>

@@ -5,7 +5,7 @@ import type { Request } from 'express';
 import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
-import { canStudentAccessAppointment, canTransition, isAdvisorCancellationReasonValid } from './appointment-status.policy';
+import { canStudentAccessAppointment, canTransition, isCancellationReasonValid } from './appointment-status.policy';
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
@@ -24,14 +24,14 @@ class ChangeStatusDto {
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async notifyAdvisorCancellation(eventId: string, studentId: string, appointmentId: string, startsAt: Date, reason: string) {
+  private async notifyCancellation(eventId: string, studentId: string, appointmentId: string, startsAt: Date, reason: string, cancelledBy: 'votre conseiller' | 'un administrateur') {
     const student = await this.prisma.user.findUnique({ where: { id: studentId }, select: { email: true, firstName: true } });
     if (!student) return;
     const deduplicationKey = `${eventId}:${studentId}:email`;
     const notification = await this.prisma.notification.upsert({
       where: { deduplicationKey },
       update: {},
-      create: { userId: studentId, channel: 'EMAIL', type: 'appointment.cancelled_by_advisor', status: 'PENDING', payload: { appointmentId, reason }, scheduledAt: new Date(), deduplicationKey },
+      create: { userId: studentId, channel: 'EMAIL', type: 'appointment.cancelled', status: 'PENDING', payload: { appointmentId, reason, cancelledBy }, scheduledAt: new Date(), deduplicationKey },
     });
     if (notification.status === 'SENT') return;
     const host = process.env.SMTP_HOST;
@@ -49,7 +49,7 @@ export class AppointmentsService {
         from: process.env.MAIL_FROM ?? 'Service orientation <orientation@example.test>',
         to: student.email,
         subject: 'Annulation de votre entretien',
-        text: `Bonjour ${student.firstName},\n\nVotre entretien prévu le ${formattedDate} a été annulé par votre conseiller.\n\nMotif : ${reason}\n\nVous pouvez réserver un nouveau créneau depuis votre espace CIDO.`,
+        text: `Bonjour ${student.firstName},\n\nVotre entretien prévu le ${formattedDate} a été annulé par ${cancelledBy}.\n\nMotif : ${reason}\n\nVous pouvez réserver un nouveau créneau depuis votre espace CIDO.`,
       });
       await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'SENT', sentAt: new Date() } });
     } catch {
@@ -88,9 +88,10 @@ export class AppointmentsService {
     const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     if (!isStudent && !isAdvisor && !isAdmin) throw new ForbiddenException();
     if (isStudent && dto.status !== 'CANCELLED_BY_STUDENT') throw new ForbiddenException('Un étudiant peut uniquement annuler son rendez-vous');
-    if (isAdvisor && dto.status === 'CANCELLED_BY_STUDENT') throw new ForbiddenException();
+    if (isAdvisor && (dto.status === 'CANCELLED_BY_STUDENT' || dto.status === 'CANCELLED_BY_ADMIN')) throw new ForbiddenException();
+    if (isAdmin && !isStudent && !isAdvisor && dto.status.startsWith('CANCELLED') && dto.status !== 'CANCELLED_BY_ADMIN') throw new ForbiddenException('Un administrateur doit utiliser le statut d’annulation administrateur');
     const reason = dto.reason?.trim();
-    if (dto.status === 'CANCELLED_BY_ADVISOR' && !isAdvisorCancellationReasonValid(reason)) throw new BadRequestException('Le motif d’annulation est obligatoire');
+    if (dto.status.startsWith('CANCELLED') && !isCancellationReasonValid(reason)) throw new BadRequestException('Le motif d’annulation est obligatoire');
     if (!canTransition(appointment.status, dto.status)) throw new BadRequestException(`Transition interdite : ${appointment.status} vers ${dto.status}`);
     const result = await this.prisma.$transaction(async tx => {
       const updated = await tx.appointment.update({ where: { id, version: appointment.version }, data: { status: dto.status, version: { increment: 1 } } });
@@ -99,7 +100,9 @@ export class AppointmentsService {
       const event = await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: id, type: 'appointment.status_changed', payload: { appointmentId: id, studentId: appointment.studentId, advisorId: appointment.advisorId, fromStatus: appointment.status, toStatus: dto.status, ...(reason ? { reason } : {}) } } });
       return { updated, eventId: event.id };
     });
-    if (dto.status === 'CANCELLED_BY_ADVISOR' && reason) await this.notifyAdvisorCancellation(result.eventId, appointment.studentId, id, appointment.availability.startsAt, reason);
+    if ((dto.status === 'CANCELLED_BY_ADVISOR' || dto.status === 'CANCELLED_BY_ADMIN') && reason) {
+      await this.notifyCancellation(result.eventId, appointment.studentId, id, appointment.availability.startsAt, reason, dto.status === 'CANCELLED_BY_ADMIN' ? 'un administrateur' : 'votre conseiller');
+    }
     return result.updated;
   }
 
@@ -120,7 +123,7 @@ export class AppointmentsService {
   }
   async studentHistory(userId: string, studentId: string) {
     await requireRole(this.prisma, userId, 'ADVISOR');
-    return this.prisma.appointment.findMany({ where: { advisorId: userId, studentId }, orderBy: { availability: { startsAt: 'asc' } }, include: { availability: true, request: true }, take: 100 });
+    return this.prisma.appointment.findMany({ where: { advisorId: userId, studentId }, orderBy: { availability: { startsAt: 'asc' } }, include: { availability: true, request: true, history: { orderBy: { createdAt: 'asc' } } }, take: 100 });
   }
 }
 

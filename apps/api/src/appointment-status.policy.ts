@@ -1,11 +1,12 @@
 import { AppointmentStatus } from '@prisma/client';
 
 const transitions: Readonly<Record<AppointmentStatus, readonly AppointmentStatus[]>> = {
-  BOOKED: ['CONFIRMED', 'CANCELLED_BY_STUDENT', 'CANCELLED_BY_ADVISOR', 'RESCHEDULED'],
-  CONFIRMED: ['COMPLETED', 'CANCELLED_BY_STUDENT', 'CANCELLED_BY_ADVISOR', 'RESCHEDULED', 'STUDENT_NO_SHOW', 'ADVISOR_NO_SHOW'],
+  BOOKED: ['CONFIRMED', 'CANCELLED_BY_STUDENT', 'CANCELLED_BY_ADVISOR', 'CANCELLED_BY_ADMIN', 'RESCHEDULED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED_BY_STUDENT', 'CANCELLED_BY_ADVISOR', 'CANCELLED_BY_ADMIN', 'RESCHEDULED', 'STUDENT_NO_SHOW', 'ADVISOR_NO_SHOW'],
   COMPLETED: [],
   CANCELLED_BY_STUDENT: [],
   CANCELLED_BY_ADVISOR: [],
+  CANCELLED_BY_ADMIN: [],
   RESCHEDULED: [],
   STUDENT_NO_SHOW: [],
   ADVISOR_NO_SHOW: [],
@@ -20,10 +21,10 @@ export function assertTransition(from: AppointmentStatus, to: AppointmentStatus)
 }
 
 export function canStudentAccessAppointment(status: AppointmentStatus): boolean {
-  return status !== 'CANCELLED_BY_ADVISOR';
+  return status !== 'CANCELLED_BY_ADVISOR' && status !== 'CANCELLED_BY_ADMIN';
 }
 
-export function isAdvisorCancellationReasonValid(reason?: string): boolean {
+export function isCancellationReasonValid(reason?: string): boolean {
   const length = reason?.trim().length ?? 0;
   return length >= 3 && length <= 500;
 }
