@@ -1038,8 +1038,7 @@ function AdvisorDashboard() {
                         <td className="advisor-history-count">
                           {item && (
                             <>
-                              {item.historyCount} entretien
-                              {item.historyCount > 1 ? "s" : ""} au CIDO
+                              {item.historyCount} ent.
                             </>
                           )}
                         </td>
