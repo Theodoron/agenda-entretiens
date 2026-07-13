@@ -15,7 +15,8 @@ class LoginDto {
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
   async login(email: string, password: string) {
-    if (process.env.NODE_ENV === 'production') throw new UnauthorizedException('Connexion de développement désactivée');
+    const devLoginEnabled = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEV_LOGIN === 'true';
+    if (!devLoginEnabled) throw new UnauthorizedException('Connexion de développement désactivée');
     const identity = await this.prisma.authIdentity.findUnique({ where: { provider_subject: { provider: 'DEV', subject: email.toLowerCase() } }, include: { user: true } });
     if (!identity?.passwordHash || !(await verify(identity.passwordHash, password)) || identity.user.status !== 'ACTIVE') throw new UnauthorizedException('Identifiants incorrects');
     return identity.user;

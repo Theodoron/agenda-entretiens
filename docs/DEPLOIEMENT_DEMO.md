@@ -68,6 +68,7 @@ Le fichier `.env` est ignoré et ne doit jamais être envoyé sur GitHub.
 
    ```text
    NODE_ENV=production
+   ENABLE_DEV_LOGIN=true
    PORT=8000
    WEB_ORIGIN=https://{{ KOYEB_PUBLIC_DOMAIN }}
    DATABASE_URL=<URI Session pooler Supabase>
