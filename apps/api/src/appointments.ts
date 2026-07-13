@@ -68,8 +68,8 @@ export class AppointmentsService {
         const previous = await tx.appointment.findFirst({ where: { studentId, status: 'COMPLETED' }, orderBy: { createdAt: 'desc' } });
         const kind = !previous ? 'FIRST_WITH_SERVICE' : previous.advisorId === slot.advisorId ? 'FOLLOW_UP_SAME_ADVISOR' : 'SEEN_OTHER_ADVISOR';
         const request = await tx.interviewRequest.create({ data: { studentId, reasonId: dto.reasonId, subject: dto.subject, description: dto.description, preferredMode: dto.preferredMode ?? null, accessibilityNeeds: dto.accessibilityNeeds ?? null } });
-        const appointment = await tx.appointment.create({ data: { availabilityId: slot.id, requestId: request.id, studentId, advisorId: slot.advisorId, kind } });
-        await tx.appointmentStatusHistory.create({ data: { appointmentId: appointment.id, toStatus: 'BOOKED', actorId: studentId } });
+        const appointment = await tx.appointment.create({ data: { availabilityId: slot.id, requestId: request.id, studentId, advisorId: slot.advisorId, kind, status: 'CONFIRMED' } });
+        await tx.appointmentStatusHistory.create({ data: { appointmentId: appointment.id, toStatus: 'CONFIRMED', actorId: studentId } });
         await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: appointment.id, type: 'appointment.booked', payload: { appointmentId: appointment.id, studentId, advisorId: slot.advisorId } } });
         return appointment;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

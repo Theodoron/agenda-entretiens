@@ -264,7 +264,7 @@ model Appointment {
   requestId      String                     @unique @db.Uuid
   studentId      String                     @db.Uuid
   advisorId      String                     @db.Uuid
-  status         AppointmentStatus          @default(BOOKED)
+  status         AppointmentStatus          @default(CONFIRMED)
   kind           AppointmentKind
   version        Int                        @default(1)
   createdAt      DateTime                   @default(now())

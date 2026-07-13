@@ -10,8 +10,8 @@ describe('machine d’états des rendez-vous', () => {
     expect(canTransition('COMPLETED', 'CONFIRMED')).toBe(false);
     expect(() => assertTransition('CANCELLED_BY_STUDENT', 'BOOKED')).toThrow('Transition de statut interdite');
   });
-  it('interdit de terminer un rendez-vous non confirmé', () => {
-    expect(canTransition('BOOKED', 'COMPLETED')).toBe(false);
+  it('permet de terminer une ancienne réservation considérée comme confirmée', () => {
+    expect(canTransition('BOOKED', 'COMPLETED')).toBe(true);
   });
   it('masque à l’étudiant la fiche annulée par le conseiller', () => {
     expect(canStudentAccessAppointment('CANCELLED_BY_ADVISOR')).toBe(false);

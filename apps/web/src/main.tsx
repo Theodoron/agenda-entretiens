@@ -83,7 +83,7 @@ const formatMode = (mode: string) =>
   ] ?? mode;
 const formatStatus = (status: string) =>
   ({
-    BOOKED: "Réservé",
+    BOOKED: "Confirmé",
     CONFIRMED: "Confirmé",
     COMPLETED: "Réalisé",
     CANCELLED_BY_STUDENT: "Annulé par l’étudiant",
@@ -981,17 +981,7 @@ function AdvisorDashboard() {
                               >
                                 Fiche entretien
                               </button>
-                              {item.status === "BOOKED" && (
-                                <button
-                                  className="compact"
-                                  onClick={() =>
-                                    changeStatus(item.id, "CONFIRMED")
-                                  }
-                                >
-                                  Confirmer
-                                </button>
-                              )}
-                              {item.status === "CONFIRMED" && (
+                              {["BOOKED", "CONFIRMED"].includes(item.status) && (
                                 <button
                                   className="compact"
                                   onClick={() =>
