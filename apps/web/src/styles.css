@@ -661,14 +661,15 @@ legend {
   align-items: center;
   gap: 0.8rem;
   padding: 0.85rem;
-  border: 2px solid #ddd3e5;
+  border: 2px solid #c5e4df;
   border-radius: 12px;
   margin: 0.65rem 0;
   cursor: pointer;
+  background: #edf8f7;
 }
 .slot:has(input:checked) {
   border-color: #4e2a84;
-  background: #f5f0fa;
+  background: #e2f3f0;
 }
 .slot input {
   width: 1.2rem;
