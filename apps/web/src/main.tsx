@@ -1049,7 +1049,7 @@ function AdvisorDashboard() {
                               </button>
                               {["BOOKED", "CONFIRMED"].includes(item.status) && (
                                 <button
-                                  className="compact"
+                                  className="compact completed-button"
                                   onClick={() =>
                                     changeStatus(item.id, "COMPLETED")
                                   }

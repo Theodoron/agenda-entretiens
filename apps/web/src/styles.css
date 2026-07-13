@@ -331,6 +331,14 @@
 .danger:hover {
   background: #fff3f5;
 }
+.completed-button {
+  background: #f5f0fa;
+  color: #4e2a84;
+  border: 1px solid #d8c9e6;
+}
+.completed-button:hover {
+  background: #e9def3;
+}
 .compact {
   width: auto;
   margin: 0;
