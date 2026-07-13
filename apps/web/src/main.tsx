@@ -19,6 +19,7 @@ type Reason = { id: string; label: string };
 type Appointment = {
   id: string;
   studentId: string;
+  advisorId: string;
   status: string;
   availability: { startsAt: string; mode: string };
   request: { subject: string };
@@ -300,6 +301,18 @@ function CommunicationsHub({
       setError((value as Error).message);
     }
   }
+  async function removeSummary(item: Communication) {
+    if (!window.confirm("Supprimer définitivement cette synthèse partagée ?")) return;
+    setError("");
+    try {
+      await api(`/appointments/${currentId}/shared-contents/${item.id}`, {
+        method: "DELETE",
+      });
+      await reload();
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
   return (
     <section className="communications">
       <div className="sheet-heading">
@@ -436,7 +449,15 @@ function CommunicationsHub({
           {summaries.length ? (
             summaries.map((item) => (
               <article className="shared-note" key={item.id}>
-                {item.content}
+                <p>{item.content}</p>
+                {role === "advisor" && item.authorId === details?.advisorId && (
+                  <button
+                    className="danger compact no-print"
+                    onClick={() => removeSummary(item)}
+                  >
+                    Supprimer
+                  </button>
+                )}
               </article>
             ))
           ) : (

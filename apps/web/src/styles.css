@@ -390,6 +390,14 @@
 .shared-note {
   border-left: 4px solid #328355;
   margin: 0.6rem 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.shared-note p {
+  margin: 0;
+  white-space: pre-wrap;
 }
 .internal {
   margin-top: 1.5rem;
@@ -732,6 +740,7 @@ footer {
   .dashboard > :not(.communications),
   .communications form,
   .communications .print-actions,
+  .communications .no-print,
   .documents-panel button {
     display: none !important;
   }

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Post, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Injectable, NotFoundException, Param, Post, Req } from '@nestjs/common';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import { requireUserId } from './current-user';
@@ -11,6 +11,10 @@ class ContentDto {
 
 export function canReadInternalNote(isAdvisor: boolean, isAdmin: boolean): boolean {
   return isAdvisor || isAdmin;
+}
+
+export function canDeleteSharedContent(isAdvisor: boolean, authorId: string, userId: string): boolean {
+  return isAdvisor && authorId === userId;
 }
 
 export function messageAuthorRole(authorId: string, studentId: string, advisorId: string): 'STUDENT' | 'ADVISOR' | 'ADMIN' {
@@ -90,6 +94,20 @@ export class CommunicationsService {
       return sharedContent;
     });
   }
+
+  async removeSharedContent(userId: string, appointmentId: string, id: string) {
+    const sharedContent = await this.prisma.sharedContent.findUnique({ where: { id } });
+    if (!sharedContent || sharedContent.appointmentId !== appointmentId) throw new NotFoundException('Synthèse introuvable');
+    const access = await this.access(userId, appointmentId);
+    if (!canDeleteSharedContent(access.isAdvisor, sharedContent.authorId, userId)) {
+      throw new ForbiddenException('Un conseiller peut uniquement supprimer ses propres synthèses');
+    }
+    await this.prisma.$transaction(async tx => {
+      await tx.sharedContent.delete({ where: { id } });
+      await tx.auditLog.create({ data: { actorId: userId, action: 'shared_content.deleted', resourceType: 'SharedContent', resourceId: id, metadata: { appointmentId } } });
+    });
+    return { deleted: true };
+  }
 }
 
 @Controller('v1/appointments/:appointmentId')
@@ -101,4 +119,5 @@ export class CommunicationsController {
   @Post('internal-notes') addNote(@Req() req: Request, @Param('appointmentId') id: string, @Body() dto: ContentDto) { return this.communications.addNote(requireUserId(req), id, dto); }
   @Get('shared-contents') sharedContents(@Req() req: Request, @Param('appointmentId') id: string) { return this.communications.sharedContents(requireUserId(req), id); }
   @Post('shared-contents') addSharedContent(@Req() req: Request, @Param('appointmentId') id: string, @Body() dto: ContentDto) { return this.communications.addSharedContent(requireUserId(req), id, dto); }
+  @Delete('shared-contents/:sharedContentId') removeSharedContent(@Req() req: Request, @Param('appointmentId') appointmentId: string, @Param('sharedContentId') id: string) { return this.communications.removeSharedContent(requireUserId(req), appointmentId, id); }
 }
