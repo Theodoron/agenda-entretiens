@@ -377,9 +377,9 @@
 .internal {
   margin-top: 1.5rem;
   padding: 1rem;
-  border: 2px solid #d79b28;
+  border: 1px solid #e7dcc8;
   border-radius: 12px;
-  background: #fffaf0;
+  background: #fffdf9;
 }
 .internal summary {
   cursor: pointer;
