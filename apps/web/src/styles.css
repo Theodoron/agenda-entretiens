@@ -730,11 +730,12 @@ legend {
 }
 .slot:has(input:checked) {
   border-color: #4e2a84;
-  background: #e2f3f0;
+  background: #eee8f3;
 }
 .slot input {
   width: 1.2rem;
   height: 1.2rem;
+  accent-color: #6b479f;
 }
 .slot span {
   display: grid;
