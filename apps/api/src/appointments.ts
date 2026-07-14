@@ -5,7 +5,7 @@ import type { Request } from 'express';
 import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
-import { canStudentAccessAppointment, canTransition, isCancellationReasonValid, shouldRepublishAvailability } from './appointment-status.policy';
+import { canStudentAccessAppointment, canStudentCancel, canTransition, isCancellationReasonValid, shouldRepublishAvailability } from './appointment-status.policy';
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
@@ -88,6 +88,11 @@ export class AppointmentsService {
     const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     if (!isStudent && !isAdvisor && !isAdmin) throw new ForbiddenException();
     if (isStudent && dto.status !== 'CANCELLED_BY_STUDENT') throw new ForbiddenException('Un étudiant peut uniquement annuler son rendez-vous');
+    const configuredCancellationHours = Number(process.env.STUDENT_CANCELLATION_HOURS ?? 24);
+    const cancellationHours = Number.isFinite(configuredCancellationHours) && configuredCancellationHours >= 0 ? configuredCancellationHours : 24;
+    if (isStudent && dto.status === 'CANCELLED_BY_STUDENT' && !canStudentCancel(appointment.availability.startsAt, cancellationHours)) {
+      throw new BadRequestException(`L’annulation étudiante est possible jusqu’à ${cancellationHours} h avant l’entretien`);
+    }
     if (isAdvisor && (dto.status === 'CANCELLED_BY_STUDENT' || dto.status === 'CANCELLED_BY_ADMIN')) throw new ForbiddenException();
     if (isAdmin && !isStudent && !isAdvisor && dto.status.startsWith('CANCELLED') && dto.status !== 'CANCELLED_BY_ADMIN') throw new ForbiddenException('Un administrateur doit utiliser le statut d’annulation administrateur');
     const reason = dto.reason?.trim();

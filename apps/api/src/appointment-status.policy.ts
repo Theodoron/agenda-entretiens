@@ -32,3 +32,8 @@ export function isCancellationReasonValid(reason?: string): boolean {
 export function shouldRepublishAvailability(status: AppointmentStatus, startsAt: Date, now = new Date()): boolean {
   return status === 'CANCELLED_BY_STUDENT' && startsAt > now;
 }
+
+export function canStudentCancel(startsAt: Date, minimumHours = 24, now = new Date()): boolean {
+  const safeMinimumHours = Number.isFinite(minimumHours) && minimumHours >= 0 ? minimumHours : 24;
+  return startsAt.getTime() - now.getTime() >= safeMinimumHours * 60 * 60_000;
+}
