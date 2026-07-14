@@ -31,6 +31,32 @@ export function buildStatistics(rows: AnalyticsRow[]) {
   };
 }
 
+const visibleCounts = <T extends { count: number }>(items: T[], threshold: number) => items.filter(item => item.count >= threshold);
+
+export function protectSmallCohorts(statistics: ReturnType<typeof buildStatistics>, threshold: number) {
+  const minimum = Math.max(1, Math.trunc(threshold));
+  return {
+    ...statistics,
+    monthly: visibleCounts(statistics.monthly, minimum),
+    statuses: visibleCounts(statistics.statuses, minimum),
+    reasons: visibleCounts(statistics.reasons, minimum),
+    reasonByMonth: statistics.reasonByMonth
+      .map(item => ({ month: item.month, reasons: Object.fromEntries(Object.entries(item.reasons).filter(([, count]) => count >= minimum)) }))
+      .filter(item => Object.keys(item.reasons).length > 0),
+    origins: {
+      components: visibleCounts(statistics.origins.components, minimum),
+      degrees: visibleCounts(statistics.origins.degrees, minimum),
+      academicYears: visibleCounts(statistics.origins.academicYears, minimum),
+    },
+    repeatByComponent: statistics.repeatByComponent.filter(item => item.students >= minimum),
+    demand: {
+      weekdays: visibleCounts(statistics.demand.weekdays, minimum),
+      hours: visibleCounts(statistics.demand.hours, minimum),
+    },
+    repeatReasons: visibleCounts(statistics.repeatReasons, minimum),
+  };
+}
+
 @Injectable()
 export class StatisticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -38,13 +64,20 @@ export class StatisticsService {
     const roles = await this.prisma.userRole.findMany({ where: { userId }, select: { role: { select: { code: true } } } });
     const codes = roles.map(item => item.role.code);
     if (!codes.includes('ADVISOR') && !codes.includes('ADMIN')) throw new ForbiddenException();
-    const [appointments, availabilities] = await Promise.all([this.prisma.appointment.findMany({ include: { availability: true, request: { include: { reason: true } }, student: { include: { component: true, degree: true, academicYear: true } } } }), this.prisma.availability.findMany({ select: { startsAt: true, status: true } })]);
+    const isAdmin = codes.includes('ADMIN');
+    const scope = isAdmin ? {} : { advisorId: userId };
+    const [appointments, availabilities, thresholdSetting] = await Promise.all([
+      this.prisma.appointment.findMany({ where: scope, include: { availability: true, request: { include: { reason: true } }, student: { include: { component: true, degree: true, academicYear: true } } } }),
+      this.prisma.availability.findMany({ where: scope, select: { startsAt: true, status: true } }),
+      this.prisma.setting.findUnique({ where: { key: 'smallCohortThreshold' } }),
+    ]);
     const rows: AnalyticsRow[] = appointments.map(item => ({ studentId: item.studentId, status: item.status, startsAt: item.availability.startsAt, createdAt: item.createdAt, reason: item.request.reason.label, component: item.student.component?.name ?? 'Non renseignée', degree: item.student.degree?.name ?? 'Non renseigné', academicYear: item.student.academicYear?.label ?? 'Non renseignée' }));
-    const statistics = buildStatistics(rows);
+    const configuredThreshold = Number(thresholdSetting?.value ?? process.env.SMALL_COHORT_THRESHOLD ?? 5);
+    const threshold = Number.isFinite(configuredThreshold) && configuredThreshold > 0 ? Math.trunc(configuredThreshold) : 5;
+    const statistics = protectSmallCohorts(buildStatistics(rows), threshold);
     const occupancyByMonth = Object.entries(availabilities.filter(item => item.status !== 'CANCELLED').reduce<Record<string, { total: number; booked: number }>>((result, item) => { const month = item.startsAt.toISOString().slice(0, 7); const value = result[month] ??= { total: 0, booked: 0 }; value.total++; if (item.status === 'BOOKED') value.booked++; return result; }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([label, value]) => ({ label, ...value, rate: value.total ? value.booked / value.total : 0 }));
     const totalSlots = occupancyByMonth.reduce((sum, item) => sum + item.total, 0), bookedSlots = occupancyByMonth.reduce((sum, item) => sum + item.booked, 0);
-    const thresholdSetting = await this.prisma.setting.findUnique({ where: { key: 'smallCohortThreshold' } });
-    return { ...statistics, occupancy: { totalSlots, bookedSlots, rate: totalSlots ? bookedSlots / totalSlots : 0, monthly: occupancyByMonth }, privacy: { smallCohortThreshold: Number(thresholdSetting?.value ?? process.env.SMALL_COHORT_THRESHOLD ?? 5), aggregatedOnly: true } };
+    return { ...statistics, occupancy: { totalSlots, bookedSlots, rate: totalSlots ? bookedSlots / totalSlots : 0, monthly: occupancyByMonth }, privacy: { smallCohortThreshold: threshold, aggregatedOnly: true, scope: isAdmin ? 'GLOBAL' : 'ADVISOR' } };
   }
 }
 

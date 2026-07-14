@@ -1700,7 +1700,11 @@ type Statistics = {
   cancellations: { cancelled: number; noShows: number; rate: number };
   demand: { weekdays: StatItem[]; hours: StatItem[] };
   repeatReasons: StatItem[];
-  privacy: { smallCohortThreshold: number; aggregatedOnly: boolean };
+  privacy: {
+    smallCohortThreshold: number;
+    aggregatedOnly: boolean;
+    scope: "GLOBAL" | "ADVISOR";
+  };
 };
 const monthLabel = (month: string) =>
   capitalizeDatePart(
@@ -1810,8 +1814,9 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               </article>
             </div>
             <p className="hint">
-              Données agrégées uniquement. Seuil de vigilance pour les petits
-              effectifs : {data.privacy.smallCohortThreshold}.
+              Périmètre : {data.privacy.scope === "ADVISOR" ? "vos entretiens" : "ensemble du service"}.
+              Données agrégées uniquement ; les ventilations inférieures à {" "}
+              {data.privacy.smallCohortThreshold} personnes sont masquées.
             </p>
           </>
         )}
