@@ -9,6 +9,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { requiredSecret } from './configuration';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -16,7 +17,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(helmet());
   app.use(cookieParser());
-  app.use(session({ name: 'agenda.sid', secret: process.env.SESSION_SECRET ?? '', resave: false, saveUninitialized: false, cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 } }));
+  app.use(session({ name: 'agenda.sid', secret: requiredSecret('SESSION_SECRET'), resave: false, saveUninitialized: false, cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 } }));
   const webOrigin = process.env.WEB_ORIGIN;
   app.enableCors(webOrigin ? { origin: webOrigin, credentials: true } : { credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
