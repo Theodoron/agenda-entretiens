@@ -651,7 +651,7 @@ textarea {
 .calendar-weekday {
   padding: 0.3rem 0;
   color: #4e2a84;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 700;
   text-align: center;
 }
@@ -746,7 +746,7 @@ button.header-button {
   width: 100%;
   min-width: 0;
 }
-.dashboard section,
+.dashboard > section,
 .dashboard details,
 .dashboard form,
 .dashboard .notice,
