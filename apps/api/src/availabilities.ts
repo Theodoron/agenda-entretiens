@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Injectable, Param, Post, Query, Req } from '@nestjs/common';
 import { AppointmentMode } from '@prisma/client';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, IsUrl, Max, MaxLength, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsUUID, IsUrl, Max, Min } from 'class-validator';
 import type { Request } from 'express';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
