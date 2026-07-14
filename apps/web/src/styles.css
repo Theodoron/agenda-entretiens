@@ -612,14 +612,16 @@ textarea {
 }
 .date-time-popover {
   position: absolute;
+  left: 50%;
   z-index: 20;
-  width: min(390px, 100%);
+  width: min(320px, calc(100vw - 2rem));
   margin-top: 0.35rem;
   padding: 1rem;
   border: 1px solid #d8cce3;
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 16px 42px rgba(49, 24, 91, 0.18);
+  transform: translateX(-50%);
 }
 .calendar-heading {
   display: grid;
