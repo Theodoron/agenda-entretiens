@@ -1351,20 +1351,22 @@ function AdvisorDashboard() {
           </div>
         )}
         <form onSubmit={create}>
-          <DateTimePicker
-            label="Début de la plage"
-            onChange={(value) => {
-              setStartsAt(value);
-              if (endsAt && endsAt < value) setEndsAt(value);
-            }}
-            value={startsAt}
-          />
-          <DateTimePicker
-            label="Fin de la plage"
-            min={startsAt}
-            onChange={setEndsAt}
-            value={endsAt}
-          />
+          <div className="date-time-row">
+            <DateTimePicker
+              label="Début de la plage"
+              onChange={(value) => {
+                setStartsAt(value);
+                if (endsAt && endsAt < value) setEndsAt(value);
+              }}
+              value={startsAt}
+            />
+            <DateTimePicker
+              label="Fin de la plage"
+              min={startsAt}
+              onChange={setEndsAt}
+              value={endsAt}
+            />
+          </div>
           <label>
             Durée de chaque entretien
             <select

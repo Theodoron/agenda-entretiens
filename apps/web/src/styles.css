@@ -587,6 +587,17 @@ textarea {
   position: relative;
   margin: 1.3rem 0;
 }
+.date-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+@media (max-width: 760px) {
+  .date-time-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
 .date-time-label {
   display: block;
   margin-bottom: 0.5rem;
