@@ -10,13 +10,13 @@ import { CommunicationsController, CommunicationsService } from './communication
 import { DocumentsController, DocumentsService } from './documents';
 import { NotificationsController, NotificationsService } from './notifications';
 import { AdminController, AdminService } from './admin';
-import { StatisticsController, StatisticsService } from './statistics';
+import { StatisticsModule } from './statistics.module';
 import { HealthController } from './health';
 import { CalendarModule } from './calendar.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }), PrismaModule, CalendarModule],
-  controllers: [HealthController, AuthController, ProfilesController, AvailabilitiesController, AppointmentsController, ReferencesController, CommunicationsController, DocumentsController, NotificationsController, AdminController, StatisticsController],
-  providers: [AuthService, ProfilesService, AvailabilitiesService, AppointmentsService, CommunicationsService, DocumentsService, NotificationsService, AdminService, StatisticsService],
+  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }), PrismaModule, CalendarModule, StatisticsModule],
+  controllers: [HealthController, AuthController, ProfilesController, AvailabilitiesController, AppointmentsController, ReferencesController, CommunicationsController, DocumentsController, NotificationsController, AdminController],
+  providers: [AuthService, ProfilesService, AvailabilitiesService, AppointmentsService, CommunicationsService, DocumentsService, NotificationsService, AdminService],
 })
 export class AppModule {}
