@@ -5,6 +5,9 @@ import { CalendarController, CalendarService } from '../src/calendar';
 import { CalendarModule } from '../src/calendar.module';
 import { PrismaModule } from '../src/prisma.module';
 import { PrismaService } from '../src/prisma.service';
+import { AppointmentsController, AppointmentsService } from '../src/appointments';
+import { AvailabilitiesController, AvailabilitiesService } from '../src/availabilities';
+import { SchedulingModule } from '../src/scheduling.module';
 import { StatisticsController, StatisticsService } from '../src/statistics';
 import { StatisticsModule } from '../src/statistics.module';
 
@@ -28,5 +31,16 @@ describe('assemblage des modules Nest', () => {
     expect(metadata(MODULE_METADATA.CONTROLLERS, StatisticsModule)).toContain(StatisticsController);
     expect(metadata(MODULE_METADATA.PROVIDERS, StatisticsModule)).toContain(StatisticsService);
     expect(metadata(MODULE_METADATA.IMPORTS, AppModule)).toContain(StatisticsModule);
+  });
+
+  it('regroupe les disponibilités et rendez-vous dans le module de planification', () => {
+    expect(metadata(MODULE_METADATA.IMPORTS, SchedulingModule)).toContain(PrismaModule);
+    expect(metadata(MODULE_METADATA.CONTROLLERS, SchedulingModule)).toEqual(
+      expect.arrayContaining([AvailabilitiesController, AppointmentsController]),
+    );
+    expect(metadata(MODULE_METADATA.PROVIDERS, SchedulingModule)).toEqual(
+      expect.arrayContaining([AvailabilitiesService, AppointmentsService]),
+    );
+    expect(metadata(MODULE_METADATA.IMPORTS, AppModule)).toContain(SchedulingModule);
   });
 });

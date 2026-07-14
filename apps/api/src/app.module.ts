@@ -3,8 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthController, AuthService } from './auth';
 import { PrismaModule } from './prisma.module';
 import { ProfilesController, ProfilesService } from './profiles';
-import { AvailabilitiesController, AvailabilitiesService } from './availabilities';
-import { AppointmentsController, AppointmentsService } from './appointments';
 import { ReferencesController } from './references';
 import { CommunicationsController, CommunicationsService } from './communications';
 import { DocumentsController, DocumentsService } from './documents';
@@ -13,10 +11,11 @@ import { AdminController, AdminService } from './admin';
 import { StatisticsModule } from './statistics.module';
 import { HealthController } from './health';
 import { CalendarModule } from './calendar.module';
+import { SchedulingModule } from './scheduling.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }), PrismaModule, CalendarModule, StatisticsModule],
-  controllers: [HealthController, AuthController, ProfilesController, AvailabilitiesController, AppointmentsController, ReferencesController, CommunicationsController, DocumentsController, NotificationsController, AdminController],
-  providers: [AuthService, ProfilesService, AvailabilitiesService, AppointmentsService, CommunicationsService, DocumentsService, NotificationsService, AdminService],
+  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }), PrismaModule, CalendarModule, SchedulingModule, StatisticsModule],
+  controllers: [HealthController, AuthController, ProfilesController, ReferencesController, CommunicationsController, DocumentsController, NotificationsController, AdminController],
+  providers: [AuthService, ProfilesService, CommunicationsService, DocumentsService, NotificationsService, AdminService],
 })
 export class AppModule {}
