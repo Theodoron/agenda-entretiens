@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { api } from "./api";
 import { CancellationDialog } from "./components/CancellationDialog";
 import { DateTimePicker } from "./components/DateTimePicker";
 import "./styles.css";
@@ -50,27 +51,6 @@ type AdvisorSlot = {
   };
 };
 
-const api = async <T,>(path: string, options?: RequestInit): Promise<T> => {
-  const response = await fetch(`/api/v1${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "content-type": "application/json",
-      ...(options?.headers ?? {}),
-    },
-  });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(
-      Array.isArray(body.message)
-        ? body.message.join(". ")
-        : (body.message ?? "Une erreur est survenue"),
-    );
-  }
-  return response.status === 204
-    ? (undefined as T)
-    : (response.json() as Promise<T>);
-};
 const capitalizeDatePart = (value: string) =>
   value ? value.charAt(0).toLocaleUpperCase("fr-FR") + value.slice(1) : value;
 const formatDate = (value: string) =>
