@@ -131,5 +131,5 @@ Ne saisir aucune donnée personnelle réelle. La session est conservée en mémo
 
 - le worker de notifications et l'envoi SMTP ne sont pas lancés, car ils nécessitent Redis et un second processus ;
 - l'instance Koyeb gratuite se met en veille après une période sans trafic, donc le premier affichage peut être plus lent ;
-- le schéma est synchronisé avec `prisma db push` au démarrage ; avant une vraie production, il faudra versionner des migrations Prisma ;
+- le schéma reste temporairement synchronisé avec `prisma db push` au démarrage ; une migration de référence est versionnée, mais chaque base existante doit suivre la procédure de baselining décrite dans `docs/MIGRATIONS.md` avant le passage à `prisma migrate deploy` ;
 - l'authentification de démonstration doit être remplacée par le CAS/SSO de l'établissement avant tout usage réel.

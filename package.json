@@ -9,6 +9,9 @@
     "lint": "npm run lint -w @agenda/api && npm run lint -w @agenda/web",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "db:drift": "prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code",
     "db:seed": "prisma db seed",
     "start:prod": "prisma db push --skip-generate && prisma db seed && node apps/api/dist/src/main.js"
   },
