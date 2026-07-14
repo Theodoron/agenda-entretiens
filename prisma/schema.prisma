@@ -93,6 +93,7 @@ model User {
   firstName     String
   lastName      String
   status        UserStatus      @default(ACTIVE)
+  calendarTokenVersion Int      @default(0)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   identities    AuthIdentity[]

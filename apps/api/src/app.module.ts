@@ -12,10 +12,11 @@ import { NotificationsController, NotificationsService } from './notifications';
 import { AdminController, AdminService } from './admin';
 import { StatisticsController, StatisticsService } from './statistics';
 import { HealthController } from './health';
+import { CalendarController, CalendarService } from './calendar';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' })],
-  controllers: [HealthController, AuthController, ProfilesController, AvailabilitiesController, AppointmentsController, ReferencesController, CommunicationsController, DocumentsController, NotificationsController, AdminController, StatisticsController],
-  providers: [PrismaService, AuthService, ProfilesService, AvailabilitiesService, AppointmentsService, CommunicationsService, DocumentsService, NotificationsService, AdminService, StatisticsService],
+  controllers: [HealthController, AuthController, ProfilesController, AvailabilitiesController, AppointmentsController, ReferencesController, CommunicationsController, DocumentsController, NotificationsController, AdminController, StatisticsController, CalendarController],
+  providers: [PrismaService, AuthService, ProfilesService, AvailabilitiesService, AppointmentsService, CommunicationsService, DocumentsService, NotificationsService, AdminService, StatisticsService, CalendarService],
 })
 export class AppModule {}

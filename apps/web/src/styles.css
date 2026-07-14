@@ -107,6 +107,35 @@
   max-width: none;
   margin-top: 1.5rem;
 }
+.calendar-subscription {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #d8cce3;
+  border-radius: 16px;
+  background: #faf7fd;
+}
+.calendar-subscription h2 {
+  margin-top: 0.35rem;
+}
+.calendar-subscription input {
+  width: 100%;
+  color: #4e2a84;
+  background: #fff;
+}
+.calendar-warning {
+  padding: 0.8rem;
+  border-left: 4px solid #6b479f;
+  background: #eee8f3;
+  color: #32185b;
+}
+.calendar-subscription-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.calendar-subscription-actions button {
+  width: auto;
+}
 .subsection-title {
   margin-top: 2.5rem;
 }

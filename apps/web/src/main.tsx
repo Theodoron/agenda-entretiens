@@ -785,12 +785,19 @@ function Profile({
 }) {
   const [data, setData] = useState<any>(),
     [title, setTitle] = useState(""),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [subscription, setSubscription] = useState<{ url: string }>();
   useEffect(() => {
-    api<any>(`/profiles/${role}/me`).then((value) => {
-      setData(value);
-      setTitle(value.title ?? "");
-    });
+    Promise.all([
+      api<any>(`/profiles/${role}/me`),
+      api<{ url: string }>("/calendar/subscription"),
+    ])
+      .then(([value, calendar]) => {
+        setData(value);
+        setTitle(value.title ?? "");
+        setSubscription(calendar);
+      })
+      .catch((error) => setNotice((error as Error).message));
   }, [role]);
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -800,6 +807,35 @@ function Profile({
         body: JSON.stringify(role === "advisor" ? { title } : {}),
       });
       setNotice("Profil enregistré.");
+    } catch (error) {
+      setNotice((error as Error).message);
+    }
+  }
+  const calendarUrl = subscription
+    ? new URL(subscription.url, window.location.origin).href
+    : "";
+  async function copyCalendarUrl() {
+    try {
+      await navigator.clipboard.writeText(calendarUrl);
+      setNotice("Lien d’abonnement copié.");
+    } catch {
+      setNotice("La copie automatique a échoué. Sélectionnez le lien ci-dessous.");
+    }
+  }
+  async function rotateCalendarUrl() {
+    if (
+      !window.confirm(
+        "Régénérer le lien ? L’ancien abonnement cessera de fonctionner.",
+      )
+    )
+      return;
+    try {
+      const calendar = await api<{ url: string }>(
+        "/calendar/subscription/rotate",
+        { method: "POST" },
+      );
+      setSubscription(calendar);
+      setNotice("Nouveau lien créé. Il faut remplacer l’ancien dans Outlook.");
     } catch (error) {
       setNotice((error as Error).message);
     }
@@ -816,39 +852,75 @@ function Profile({
         </button>
       </div>
       {data && (
-        <form onSubmit={save}>
-          <p>
-            <strong>
-              {data.user.firstName} {data.user.lastName}
-            </strong>
-            <br />
-            {data.user.email}
-          </p>
-          {role === "student" ? (
+        <>
+          <form onSubmit={save}>
             <p>
-              Identifiant : {data.universityId}
+              <strong>
+                {data.user.firstName} {data.user.lastName}
+              </strong>
               <br />
-              Formation : {data.degree?.name ?? "Non renseignée"}
-              <br />
-              Composante : {data.component?.name ?? "Non renseignée"}
+              {data.user.email}
             </p>
-          ) : (
-            <label>
-              Fonction
-              <input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                maxLength={120}
-              />
-            </label>
+            {role === "student" ? (
+              <p>
+                Identifiant : {data.universityId}
+                <br />
+                Formation : {data.degree?.name ?? "Non renseignée"}
+                <br />
+                Composante : {data.component?.name ?? "Non renseignée"}
+              </p>
+            ) : (
+              <label>
+                Fonction
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  maxLength={120}
+                />
+              </label>
+            )}
+            <button>Enregistrer</button>
+          </form>
+          {subscription && (
+            <section
+              aria-labelledby="calendar-subscription-title"
+              className="calendar-subscription"
+            >
+              <p className="eyebrow">Outlook et calendriers externes</p>
+              <h2 id="calendar-subscription-title">Mon abonnement calendrier</h2>
+              <p>
+                Dans Outlook, choisissez <strong>Ajouter un calendrier</strong>,
+                puis <strong>S’abonner à partir du web</strong> et collez ce lien.
+              </p>
+              <label>
+                Lien privé d’abonnement
+                <input readOnly value={calendarUrl} />
+              </label>
+              <p className="calendar-warning">
+                Ce lien donne accès aux informations de votre calendrier. Ne le
+                transmettez pas. Vous pouvez le régénérer s’il a été partagé par
+                erreur.
+              </p>
+              <div className="calendar-subscription-actions">
+                <button onClick={copyCalendarUrl} type="button">
+                  Copier le lien Outlook
+                </button>
+                <button
+                  className="secondary"
+                  onClick={rotateCalendarUrl}
+                  type="button"
+                >
+                  Régénérer le lien
+                </button>
+              </div>
+            </section>
           )}
           {notice && (
             <div className="success" role="status">
               {notice}
             </div>
           )}
-          <button>Enregistrer</button>
-        </form>
+        </>
       )}
     </section>
   );
