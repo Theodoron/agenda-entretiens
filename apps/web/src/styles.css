@@ -189,6 +189,54 @@
   background: #fff;
   box-shadow: 0 24px 70px rgba(31, 20, 43, 0.25);
 }
+.reservation-dialog {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(31, 20, 43, 0.25);
+}
+.reservation-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.reservation-dialog-header h2,
+.reservation-dialog-header p {
+  margin-top: 0;
+}
+.dialog-close {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.selected-slot-summary {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: #edf8f7;
+}
+.selected-slot-summary span {
+  color: #675d70;
+  font-size: 0.9rem;
+}
+.reservation-dialog form {
+  width: 100%;
+  max-width: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 .cancellation-dialog form {
   width: 100%;
   max-width: none;
@@ -821,6 +869,14 @@ button.header-button {
   width: 100%;
   max-width: none;
 }
+.slot-picker {
+  width: 100%;
+  padding: 2rem;
+  border: 1px solid #e6deed;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(78, 42, 132, 0.09);
+}
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -929,6 +985,19 @@ footer {
   color: #fff;
 }
 @media (max-width: 760px) {
+  .reservation-dialog {
+    max-height: calc(100vh - 1rem);
+    padding: 1rem;
+  }
+  .dialog-actions {
+    flex-direction: column-reverse;
+  }
+  .dialog-actions button {
+    width: 100%;
+  }
+  .slot-picker {
+    padding: 1rem;
+  }
   header span {
     display: none;
   }

@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { api } from "./api";
 import { CancellationDialog } from "./components/CancellationDialog";
 import { DateTimePicker } from "./components/DateTimePicker";
+import { ReservationDialog } from "./components/ReservationDialog";
 import "./styles.css";
 
 type Role = "STUDENT" | "ADVISOR" | "ADMIN";
@@ -702,12 +703,11 @@ function StudentDashboard() {
       await reload();
     }
   }
-  async function book(event: React.FormEvent) {
-    event.preventDefault();
+  async function book() {
     setError("");
     if (reasonIds.length === 0) {
       setError("Veuillez sélectionner au moins un motif.");
-      return;
+      return false;
     }
     try {
       await api("/appointments", {
@@ -725,8 +725,10 @@ function StudentDashboard() {
       setSubject("");
       setDescription("");
       await reload();
+      return true;
     } catch (value) {
       setError((value as Error).message);
+      return false;
     }
   }
   async function cancel(id: string, reason: string) {
@@ -754,6 +756,7 @@ function StudentDashboard() {
   const filteredSlots = advisorFilter
     ? slots.filter((slot) => slot.advisor.userId === advisorFilter)
     : slots;
+  const selectedSlot = slots.find((slot) => slot.id === selected);
   const upcomingAppointments = appointments.filter((item) =>
     isUpcomingAppointment(item),
   );
@@ -827,6 +830,23 @@ function StudentDashboard() {
           onConfirm={(reason) => cancel(cancellingId, reason)}
         />
       )}
+      {selectedSlot && (
+        <ReservationDialog
+          description={description}
+          error={error}
+          formatDate={formatDate}
+          formatMode={formatMode}
+          onClose={() => setSelected("")}
+          onDescriptionChange={setDescription}
+          onReasonIdsChange={setReasonIds}
+          onSubjectChange={setSubject}
+          onSubmit={book}
+          reasonIds={reasonIds}
+          reasons={reasons}
+          slot={selectedSlot}
+          subject={subject}
+        />
+      )}
       <section>
         <h2>Mobiliser un entretien</h2>
         {message && (
@@ -842,7 +862,7 @@ function StudentDashboard() {
         {slots.length === 0 ? (
           <p className="empty">Aucun créneau disponible.</p>
         ) : (
-          <form onSubmit={book}>
+          <div className="slot-picker">
             <label>
               Filtrer par conseiller
               <select
@@ -874,7 +894,6 @@ function StudentDashboard() {
                       name="slot"
                       checked={selected === slot.id}
                       onChange={() => choose(slot.id)}
-                      required
                     />
                     <span>
                       <strong>{formatDate(slot.startsAt)}</strong>
@@ -888,50 +907,7 @@ function StudentDashboard() {
                 ))
               )}
             </fieldset>
-            <fieldset className="reason-picker" aria-required="true">
-              <legend>Motif(s)</legend>
-              <p>Sélectionnez un ou plusieurs motifs.</p>
-              <div className="reason-options">
-                {reasons.map((reason) => (
-                  <label className="reason-option" key={reason.id}>
-                    <input
-                      type="checkbox"
-                      checked={reasonIds.includes(reason.id)}
-                      onChange={(event) =>
-                        setReasonIds((current) =>
-                          event.target.checked
-                            ? [...current, reason.id]
-                            : current.filter((id) => id !== reason.id),
-                        )
-                      }
-                    />
-                    <span>{reason.label}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <label>
-              Objet
-              <input
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                minLength={3}
-                maxLength={160}
-                required
-              />
-            </label>
-            <label>
-              Décrivez votre demande
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                minLength={10}
-                maxLength={4000}
-                required
-              />
-            </label>
-            <button>Confirmer la réservation</button>
-          </form>
+          </div>
         )}
       </section>
       <section>
