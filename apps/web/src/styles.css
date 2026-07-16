@@ -906,7 +906,7 @@ legend {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.75rem 0.85rem;
+  padding: 0.5rem 0.85rem;
   cursor: pointer;
 }
 .reason-option + .reason-option {
