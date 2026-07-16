@@ -655,7 +655,7 @@ h1 {
   margin: 0.5rem 0;
 }
 .login #login-title {
-  font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+  font-size: clamp(1.95rem, 3.8vw, 3.45rem);
 }
 .login #login-title span {
   display: block;
