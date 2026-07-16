@@ -112,6 +112,9 @@
   max-width: none;
   margin-top: 1.5rem;
 }
+.profile-save-notice {
+  margin-top: 1rem;
+}
 .calendar-subscription {
   margin-top: 2rem;
   padding: 1.5rem;

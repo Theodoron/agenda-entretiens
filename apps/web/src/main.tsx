@@ -548,6 +548,7 @@ function Profile({
 }) {
   const [data, setData] = useState<any>(),
     [title, setTitle] = useState(""),
+    [saveNotice, setSaveNotice] = useState(""),
     [notice, setNotice] = useState(""),
     [subscription, setSubscription] = useState<{ url: string }>();
   useEffect(() => {
@@ -564,14 +565,15 @@ function Profile({
   }, [role]);
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    setSaveNotice("");
     try {
       await api(`/profiles/${role}/me`, {
         method: "PATCH",
         body: JSON.stringify(role === "advisor" ? { title } : {}),
       });
-      setNotice("Profil enregistré.");
+      setSaveNotice("Profil enregistré.");
     } catch (error) {
-      setNotice((error as Error).message);
+      setSaveNotice((error as Error).message);
     }
   }
   const calendarUrl = subscription
@@ -644,6 +646,11 @@ function Profile({
             )}
             <button>Enregistrer</button>
           </form>
+          {saveNotice && (
+            <div className="success profile-save-notice" role="status">
+              {saveNotice}
+            </div>
+          )}
           {subscription && (
             <section
               aria-labelledby="calendar-subscription-title"
