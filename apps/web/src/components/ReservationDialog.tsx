@@ -102,67 +102,69 @@ export function ReservationDialog({
         role="dialog"
         tabIndex={-1}
       >
-        <div className="reservation-dialog-header">
-          <div>
-            <p className="eyebrow">Finaliser la réservation</p>
-            <h2 id="reservation-title">Votre demande d’entretien</h2>
-          </div>
-          <button
-            aria-label="Fermer la fenêtre"
-            className="dialog-close"
-            disabled={submitting}
-            onClick={onClose}
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-        <div className="selected-slot-summary">
-          <strong>{formatDate(slot.startsAt)}</strong>
-          <span>{slot.advisor.user.firstName} {slot.advisor.user.lastName}</span>
-          <span>Modalité : {formatMode(slot.mode)}</span>
-        </div>
-        {error && <div className="error" role="alert">{error}</div>}
-        <form onSubmit={submit}>
-          <fieldset className="reason-picker" aria-required="true">
-            <legend>Motif(s)</legend>
-            <p>Sélectionnez un ou plusieurs motifs.</p>
-            <div className="reason-options">
-              {reasons.map((reason) => (
-                <label className="reason-option" key={reason.id}>
-                  <input
-                    checked={reasonIds.includes(reason.id)}
-                    onChange={(event) =>
-                      onReasonIdsChange(
-                        event.target.checked
-                          ? [...reasonIds, reason.id]
-                          : reasonIds.filter((id) => id !== reason.id),
-                      )
-                    }
-                    type="checkbox"
-                  />
-                  <span>{reason.label}</span>
-                </label>
-              ))}
+        <div className="reservation-dialog-content">
+          <div className="reservation-dialog-header">
+            <div>
+              <p className="eyebrow">Finaliser la réservation</p>
+              <h2 id="reservation-title">Votre demande d’entretien</h2>
             </div>
-          </fieldset>
-          <label>
-            Objet
-            <input maxLength={160} minLength={3} onChange={(event) => onSubjectChange(event.target.value)} required value={subject} />
-          </label>
-          <label>
-            Décrivez votre demande
-            <textarea maxLength={4000} minLength={10} onChange={(event) => onDescriptionChange(event.target.value)} required value={description} />
-          </label>
-          <div className="dialog-actions">
-            <button className="secondary" disabled={submitting} onClick={onClose} type="button">
-              Choisir un autre créneau
-            </button>
-            <button disabled={submitting} type="submit">
-              {submitting ? "Réservation…" : "Confirmer la réservation"}
+            <button
+              aria-label="Fermer la fenêtre"
+              className="dialog-close"
+              disabled={submitting}
+              onClick={onClose}
+              type="button"
+            >
+              ×
             </button>
           </div>
-        </form>
+          <div className="selected-slot-summary">
+            <strong>{formatDate(slot.startsAt)}</strong>
+            <span>{slot.advisor.user.firstName} {slot.advisor.user.lastName}</span>
+            <span>Modalité : {formatMode(slot.mode)}</span>
+          </div>
+          {error && <div className="error" role="alert">{error}</div>}
+          <form onSubmit={submit}>
+            <fieldset className="reason-picker" aria-required="true">
+              <legend>Motif(s)</legend>
+              <p>Sélectionnez un ou plusieurs motifs.</p>
+              <div className="reason-options">
+                {reasons.map((reason) => (
+                  <label className="reason-option" key={reason.id}>
+                    <input
+                      checked={reasonIds.includes(reason.id)}
+                      onChange={(event) =>
+                        onReasonIdsChange(
+                          event.target.checked
+                            ? [...reasonIds, reason.id]
+                            : reasonIds.filter((id) => id !== reason.id),
+                        )
+                      }
+                      type="checkbox"
+                    />
+                    <span>{reason.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label>
+              Objet
+              <input maxLength={160} minLength={3} onChange={(event) => onSubjectChange(event.target.value)} required value={subject} />
+            </label>
+            <label>
+              Décrivez votre demande
+              <textarea maxLength={4000} minLength={10} onChange={(event) => onDescriptionChange(event.target.value)} required value={description} />
+            </label>
+            <div className="dialog-actions">
+              <button className="secondary" disabled={submitting} onClick={onClose} type="button">
+                Choisir un autre créneau
+              </button>
+              <button disabled={submitting} type="submit">
+                {submitting ? "Réservation…" : "Confirmer la réservation"}
+              </button>
+            </div>
+          </form>
+        </div>
       </section>
     </div>
   );
