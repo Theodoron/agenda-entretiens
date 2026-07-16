@@ -899,7 +899,10 @@ button.header-button {
   color: #4e2a84;
 }
 .student-upcoming-title {
-  margin-top: 1.75rem;
+  margin-top: 2.5rem;
+}
+.advisor-upcoming-title {
+  margin-top: 2.5rem;
 }
 .dashboard form {
   width: 100%;
