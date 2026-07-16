@@ -890,6 +890,34 @@ legend {
 .slot small {
   color: #675d70;
 }
+.reason-picker > p {
+  margin: -0.35rem 0 0.65rem;
+  color: #675d70;
+  font-size: 0.9rem;
+}
+.reason-options {
+  display: grid;
+  gap: 0.55rem;
+}
+.reason-option {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+  border: 2px solid #d9d2df;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.reason-option:has(input:checked) {
+  border-color: #4e2a84;
+  background: #f1edf5;
+}
+.reason-option input {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
 footer {
   text-align: center;
   padding: 1.5rem;

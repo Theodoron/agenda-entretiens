@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Patch, Post, Req } from '@nestjs/common';
 import { AppointmentMode, AppointmentStatus, Prisma } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
@@ -9,7 +9,7 @@ import { canStudentAccessAppointment, canStudentCancel, canTransition, isCancell
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
-  @IsUUID() reasonId!: string;
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(6) @ArrayUnique() @IsUUID(undefined, { each: true }) reasonIds!: string[];
   @IsString() @MinLength(3) @MaxLength(160) subject!: string;
   @IsString() @MinLength(10) @MaxLength(4000) description!: string;
   @IsOptional() @IsEnum(AppointmentMode) preferredMode?: AppointmentMode;
@@ -61,13 +61,15 @@ export class AppointmentsService {
     await requireRole(this.prisma, studentId, 'STUDENT');
     try {
       return await this.prisma.$transaction(async tx => {
+        const reasonCount = await tx.interviewReason.count({ where: { id: { in: dto.reasonIds }, active: true } });
+        if (reasonCount !== dto.reasonIds.length) throw new BadRequestException('Veuillez sélectionner au moins un motif valide');
         const slot = await tx.availability.findUnique({ where: { id: dto.availabilityId } });
         if (!slot || slot.startsAt <= new Date()) throw new BadRequestException('Ce créneau n’est plus disponible');
         const claimed = await tx.availability.updateMany({ where: { id: slot.id, version: slot.version, OR: [{ status: 'AVAILABLE' }, { status: 'HELD', heldByUserId: studentId, heldUntil: { gt: new Date() } }] }, data: { status: 'BOOKED', heldByUserId: null, heldUntil: null, version: { increment: 1 } } });
         if (claimed.count !== 1) throw new ConflictException('Ce créneau vient d’être réservé');
         const previous = await tx.appointment.findFirst({ where: { studentId, status: 'COMPLETED' }, orderBy: { createdAt: 'desc' } });
         const kind = !previous ? 'FIRST_WITH_SERVICE' : previous.advisorId === slot.advisorId ? 'FOLLOW_UP_SAME_ADVISOR' : 'SEEN_OTHER_ADVISOR';
-        const request = await tx.interviewRequest.create({ data: { studentId, reasonId: dto.reasonId, subject: dto.subject, description: dto.description, preferredMode: dto.preferredMode ?? null, accessibilityNeeds: dto.accessibilityNeeds ?? null } });
+        const request = await tx.interviewRequest.create({ data: { studentId, subject: dto.subject, description: dto.description, preferredMode: dto.preferredMode ?? null, accessibilityNeeds: dto.accessibilityNeeds ?? null, reasons: { create: dto.reasonIds.map(reasonId => ({ reasonId })) } } });
         const appointment = await tx.appointment.create({ data: { availabilityId: slot.id, requestId: request.id, studentId, advisorId: slot.advisorId, kind, status: 'CONFIRMED' } });
         await tx.appointmentStatusHistory.create({ data: { appointmentId: appointment.id, toStatus: 'CONFIRMED', actorId: studentId } });
         await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: appointment.id, type: 'appointment.booked', payload: { appointmentId: appointment.id, studentId, advisorId: slot.advisorId } } });
@@ -134,11 +136,11 @@ export class AppointmentsService {
     const roles = await this.prisma.userRole.findMany({ where: { userId }, select: { role: { select: { code: true } } } });
     const codes = roles.map(item => item.role.code);
     const where = codes.includes('ADMIN') ? {} : codes.includes('ADVISOR') ? { advisorId: userId } : { studentId: userId };
-    return this.prisma.appointment.findMany({ where, orderBy: { availability: { startsAt: 'asc' } }, include: { availability: { include: { location: true } }, request: { include: { reason: true } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } } } } }, take: 100 });
+    return this.prisma.appointment.findMany({ where, orderBy: { availability: { startsAt: 'asc' } }, include: { availability: { include: { location: true } }, request: { include: { reasons: { include: { reason: true }, orderBy: { reason: { sortOrder: 'asc' } } } } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } } } } }, take: 100 });
   }
 
   async one(userId: string, id: string) {
-    const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: { include: { location: true } }, request: { include: { reason: true } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } } } }, history: { orderBy: { createdAt: 'asc' } }, messages: { where: { visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } }, sharedContents: true } });
+    const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: { include: { location: true } }, request: { include: { reasons: { include: { reason: true }, orderBy: { reason: { sortOrder: 'asc' } } } } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } } } }, history: { orderBy: { createdAt: 'asc' } }, messages: { where: { visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } }, sharedContents: true } });
     if (!appointment) throw new BadRequestException('Rendez-vous introuvable');
     const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     if (!isAdmin && appointment.studentId !== userId && appointment.advisorId !== userId) throw new BadRequestException('Rendez-vous introuvable');

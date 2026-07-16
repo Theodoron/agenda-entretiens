@@ -123,6 +123,10 @@ function eventLocation(availability: { mode: string; videoUrl: string | null; lo
   return availability.location ? [availability.location.name, availability.location.address].filter(Boolean).join(' — ') : 'Présentiel';
 }
 
+function reasonLabels(request: { reasons: { reason: { label: string } }[] }) {
+  return request.reasons.map(item => item.reason.label).join(', ');
+}
+
 @Injectable()
 export class CalendarService {
   constructor(private readonly prisma: PrismaService) {}
@@ -165,7 +169,7 @@ export class CalendarService {
         location: true,
         appointment: {
           include: {
-            request: { include: { reason: true } },
+            request: { include: { reasons: { include: { reason: true }, orderBy: { reason: { sortOrder: 'asc' } } } } },
             student: { include: { user: { select: { firstName: true, lastName: true } } } },
           },
         },
@@ -181,7 +185,7 @@ export class CalendarService {
           `Étudiant : ${studentName}`,
           `Numéro étudiant : ${appointment.student.universityId}`,
           `Objet : ${appointment.request.subject}`,
-          `Motif : ${appointment.request.reason.label}`,
+          `Motif(s) : ${reasonLabels(appointment.request)}`,
           `Modalité : ${modeLabel(slot.mode)}`,
         ];
         if (slot.videoUrl) description.push(`Visioconférence : ${slot.videoUrl}`);
@@ -223,7 +227,7 @@ export class CalendarService {
       orderBy: { availability: { startsAt: 'asc' } },
       include: {
         availability: { include: { location: true } },
-        request: { include: { reason: true } },
+        request: { include: { reasons: { include: { reason: true }, orderBy: { reason: { sortOrder: 'asc' } } } } },
         advisor: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
       take: 20,
@@ -233,7 +237,7 @@ export class CalendarService {
       const description = [
         `Conseiller : ${advisorName}`,
         `Objet : ${appointment.request.subject}`,
-        `Motif : ${appointment.request.reason.label}`,
+        `Motif(s) : ${reasonLabels(appointment.request)}`,
         `Modalité : ${modeLabel(appointment.availability.mode)}`,
       ];
       if (appointment.availability.videoUrl) description.push(`Visioconférence : ${appointment.availability.videoUrl}`);

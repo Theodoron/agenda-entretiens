@@ -3,8 +3,13 @@ import type { Request } from 'express';
 import { requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
 
-type AnalyticsRow = { studentId: string; status: string; startsAt: Date; createdAt: Date; reason: string; component: string; degree: string; academicYear: string };
+type AnalyticsRow = { studentId: string; status: string; startsAt: Date; createdAt: Date; reason?: string; reasons?: string[]; component: string; degree: string; academicYear: string };
 const countBy = (rows: AnalyticsRow[], key: (row: AnalyticsRow) => string) => Object.entries(rows.reduce<Record<string, number>>((result, row) => { const value = key(row); result[value] = (result[value] ?? 0) + 1; return result; }, {})).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'));
+const reasonLabels = (row: AnalyticsRow) => row.reasons ?? (row.reason ? [row.reason] : []);
+const countReasons = (rows: AnalyticsRow[]) => Object.entries(rows.reduce<Record<string, number>>((result, row) => {
+  for (const reason of reasonLabels(row)) result[reason] = (result[reason] ?? 0) + 1;
+  return result;
+}, {})).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'));
 
 export function buildStatistics(rows: AnalyticsRow[]) {
   const byStudent = rows.reduce<Record<string, AnalyticsRow[]>>((result, row) => { (result[row.studentId] ??= []).push(row); return result; }, {});
@@ -12,7 +17,12 @@ export function buildStatistics(rows: AnalyticsRow[]) {
   const uniqueStudents = students.flatMap(items => items[0] ? [items[0]] : []);
   const repeated = students.filter(items => items.length > 1);
   const repeatByComponent = Object.entries(students.reduce<Record<string, { students: number; appointments: number; repeated: number }>>((result, items) => { const component = items[0]?.component ?? 'Non renseignée'; const value = result[component] ??= { students: 0, appointments: 0, repeated: 0 }; value.students++; value.appointments += items.length; if (items.length > 1) value.repeated++; return result; }, {})).map(([label, value]) => ({ label, ...value, average: value.appointments / value.students }));
-  const reasonByMonth = Object.entries(rows.reduce<Record<string, Record<string, number>>>((result, row) => { const month = row.startsAt.toISOString().slice(0, 7); const reasons = result[month] ??= {}; reasons[row.reason] = (reasons[row.reason] ?? 0) + 1; return result; }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([month, reasons]) => ({ month, reasons }));
+  const reasonByMonth = Object.entries(rows.reduce<Record<string, Record<string, number>>>((result, row) => {
+    const month = row.startsAt.toISOString().slice(0, 7);
+    const reasons = result[month] ??= {};
+    for (const reason of reasonLabels(row)) reasons[reason] = (reasons[reason] ?? 0) + 1;
+    return result;
+  }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([month, reasons]) => ({ month, reasons }));
   const delays = rows.map(row => Math.max(0, (row.startsAt.getTime() - row.createdAt.getTime()) / 86_400_000)).sort((a, b) => a - b);
   const medianDelay = delays.length ? (delays[Math.floor((delays.length - 1) / 2)]! + delays[Math.ceil((delays.length - 1) / 2)]!) / 2 : 0;
   const cancelledStatuses = new Set(['CANCELLED_BY_STUDENT', 'CANCELLED_BY_ADVISOR', 'RESCHEDULED']);
@@ -21,13 +31,13 @@ export function buildStatistics(rows: AnalyticsRow[]) {
   return {
     totals: { appointments: rows.length, students: students.length, repeatStudents: repeated.length, averagePerStudent: students.length ? rows.length / students.length : 0 },
     monthly: countBy(rows, row => row.startsAt.toISOString().slice(0, 7)).sort((a, b) => a.label.localeCompare(b.label)),
-    statuses: countBy(rows, row => row.status), reasons: countBy(rows, row => row.reason), reasonByMonth,
+    statuses: countBy(rows, row => row.status), reasons: countReasons(rows), reasonByMonth,
     origins: { components: countBy(uniqueStudents, row => row.component), degrees: countBy(uniqueStudents, row => row.degree), academicYears: countBy(uniqueStudents, row => row.academicYear) },
     repeatByComponent,
     accessDelay: { averageDays: delays.length ? delays.reduce((sum, value) => sum + value, 0) / delays.length : 0, medianDays: medianDelay },
     cancellations: { cancelled: rows.filter(row => cancelledStatuses.has(row.status)).length, noShows: rows.filter(row => noShowStatuses.has(row.status)).length, rate: rows.length ? rows.filter(row => cancelledStatuses.has(row.status) || noShowStatuses.has(row.status)).length / rows.length : 0 },
     demand: { weekdays: countBy(rows, row => ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][row.startsAt.getDay()]!), hours: countBy(rows, row => `${String(row.startsAt.getHours()).padStart(2, '0')} h`) },
-    repeatReasons: countBy(repeatedRows, row => row.reason),
+    repeatReasons: countReasons(repeatedRows),
   };
 }
 
@@ -67,11 +77,11 @@ export class StatisticsService {
     const isAdmin = codes.includes('ADMIN');
     const scope = isAdmin ? {} : { advisorId: userId };
     const [appointments, availabilities, thresholdSetting] = await Promise.all([
-      this.prisma.appointment.findMany({ where: scope, include: { availability: true, request: { include: { reason: true } }, student: { include: { component: true, degree: true, academicYear: true } } } }),
+      this.prisma.appointment.findMany({ where: scope, include: { availability: true, request: { include: { reasons: { include: { reason: true } } } }, student: { include: { component: true, degree: true, academicYear: true } } } }),
       this.prisma.availability.findMany({ where: scope, select: { startsAt: true, status: true } }),
       this.prisma.setting.findUnique({ where: { key: 'smallCohortThreshold' } }),
     ]);
-    const rows: AnalyticsRow[] = appointments.map(item => ({ studentId: item.studentId, status: item.status, startsAt: item.availability.startsAt, createdAt: item.createdAt, reason: item.request.reason.label, component: item.student.component?.name ?? 'Non renseignée', degree: item.student.degree?.name ?? 'Non renseigné', academicYear: item.student.academicYear?.label ?? 'Non renseignée' }));
+    const rows: AnalyticsRow[] = appointments.map(item => ({ studentId: item.studentId, status: item.status, startsAt: item.availability.startsAt, createdAt: item.createdAt, reasons: item.request.reasons.map(link => link.reason.label), component: item.student.component?.name ?? 'Non renseignée', degree: item.student.degree?.name ?? 'Non renseigné', academicYear: item.student.academicYear?.label ?? 'Non renseignée' }));
     const configuredThreshold = Number(thresholdSetting?.value ?? process.env.SMALL_COHORT_THRESHOLD ?? 5);
     const threshold = Number.isFinite(configuredThreshold) && configuredThreshold > 0 ? Math.trunc(configuredThreshold) : 5;
     const statistics = protectSmallCohorts(buildStatistics(rows), threshold);

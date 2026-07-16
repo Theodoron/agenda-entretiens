@@ -55,7 +55,13 @@ describe('abonnement calendrier', () => {
         status: 'CONFIRMED',
         version: 1,
         updatedAt: new Date('2026-07-14T12:00:00.000Z'),
-        request: { subject: 'Mon projet', reason: { label: 'Orientation' } },
+        request: {
+          subject: 'Mon projet',
+          reasons: [
+            { reason: { label: 'Orientation-réorientation' } },
+            { reason: { label: 'Projet professionnel, débouchés' } },
+          ],
+        },
         student: { universityId: 'E12345', user: { firstName: 'Alice', lastName: 'Martin' } },
       },
     };
@@ -86,9 +92,10 @@ describe('abonnement calendrier', () => {
     const service = new CalendarService(prisma as never);
 
     const advisorFeed = await service.feed(`${createCalendarToken(advisorId, 0)}.ics`);
+    const unfoldedAdvisorFeed = advisorFeed.replaceAll('\r\n ', '');
     expect(advisorFeed).toContain('Alice Martin');
     expect(advisorFeed).toContain('E12345');
-    expect(advisorFeed).toContain('Motif : Orientation');
+    expect(unfoldedAdvisorFeed).toContain('Motif(s) : Orientation-réorientation\\, Projet professionnel\\, débouchés');
     expect(advisorFeed).toContain('SUMMARY:Créneau libre');
 
     const studentFeed = await service.feed(`${createCalendarToken(studentId, 0)}.ics`);

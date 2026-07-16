@@ -9,8 +9,24 @@ const permissions = {
 };
 
 async function main() {
-  for (const label of ['Projet professionnel', 'Recherche de stage ou d’alternance', 'CV et candidature', 'Réorientation', 'Préparation à un entretien']) {
-    await prisma.interviewReason.upsert({ where: { label }, update: { active: true }, create: { label } });
+  const interviewReasons = [
+    'Orientation-réorientation',
+    'Poursuite d’étude',
+    'Projet professionnel, débouchés',
+    'Candidature formation',
+    'Information césure',
+    'Dossier césure',
+  ];
+  await prisma.interviewReason.updateMany({
+    where: { label: { notIn: interviewReasons } },
+    data: { active: false },
+  });
+  for (const [sortOrder, label] of interviewReasons.entries()) {
+    await prisma.interviewReason.upsert({
+      where: { label },
+      update: { active: true, sortOrder },
+      create: { label, sortOrder },
+    });
   }
   const component = await prisma.component.upsert({ where: { name: 'UFR Sciences' }, update: {}, create: { name: 'UFR Sciences' } });
   await prisma.degree.upsert({ where: { componentId_name: { componentId: component.id, name: 'Licence Informatique' } }, update: {}, create: { componentId: component.id, name: 'Licence Informatique' } });

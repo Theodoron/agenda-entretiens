@@ -195,10 +195,11 @@ model AdvisorProfile {
 }
 
 model InterviewReason {
-  id       String             @id @default(uuid()) @db.Uuid
-  label    String             @unique
-  active   Boolean            @default(true)
-  requests InterviewRequest[]
+  id           String                   @id @default(uuid()) @db.Uuid
+  label        String                   @unique
+  active       Boolean                  @default(true)
+  sortOrder    Int                      @default(0)
+  requestLinks InterviewRequestReason[]
 }
 
 model Location {
@@ -246,17 +247,26 @@ model Availability {
 model InterviewRequest {
   id                 String           @id @default(uuid()) @db.Uuid
   studentId          String           @db.Uuid
-  reasonId           String           @db.Uuid
   subject            String
   description        String
   preferredMode      AppointmentMode?
   accessibilityNeeds String?
   createdAt          DateTime         @default(now())
   student            StudentProfile   @relation(fields: [studentId], references: [userId])
-  reason             InterviewReason  @relation(fields: [reasonId], references: [id])
+  reasons            InterviewRequestReason[]
   appointment        Appointment?
 
   @@index([studentId, createdAt])
+}
+
+model InterviewRequestReason {
+  requestId String           @db.Uuid
+  reasonId  String           @db.Uuid
+  request   InterviewRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reason    InterviewReason  @relation(fields: [reasonId], references: [id], onDelete: Restrict)
+
+  @@id([requestId, reasonId])
+  @@index([reasonId])
 }
 
 model Appointment {

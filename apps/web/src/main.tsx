@@ -666,7 +666,7 @@ function StudentDashboard() {
     [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selected, setSelected] = useState(""),
     [advisorFilter, setAdvisorFilter] = useState(""),
-    [reasonId, setReasonId] = useState(""),
+    [reasonIds, setReasonIds] = useState<string[]>([]),
     [subject, setSubject] = useState(""),
     [description, setDescription] = useState("");
   const [message, setMessage] = useState(""),
@@ -682,7 +682,6 @@ function StudentDashboard() {
       setSlots(s);
       setReasons(r);
       setAppointments(a);
-      setReasonId((current) => current || r[0]?.id || "");
     });
   useEffect(() => {
     reload().catch((value) => setError(value.message));
@@ -706,18 +705,23 @@ function StudentDashboard() {
   async function book(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    if (reasonIds.length === 0) {
+      setError("Veuillez sélectionner au moins un motif.");
+      return;
+    }
     try {
       await api("/appointments", {
         method: "POST",
         body: JSON.stringify({
           availabilityId: selected,
-          reasonId,
+          reasonIds,
           subject,
           description,
         }),
       });
       setMessage("Votre rendez-vous est réservé.");
       setSelected("");
+      setReasonIds([]);
       setSubject("");
       setDescription("");
       await reload();
@@ -884,20 +888,28 @@ function StudentDashboard() {
                 ))
               )}
             </fieldset>
-            <label>
-              Motif
-              <select
-                value={reasonId}
-                onChange={(event) => setReasonId(event.target.value)}
-                required
-              >
+            <fieldset className="reason-picker" aria-required="true">
+              <legend>Motif(s)</legend>
+              <p>Sélectionnez un ou plusieurs motifs.</p>
+              <div className="reason-options">
                 {reasons.map((reason) => (
-                  <option key={reason.id} value={reason.id}>
-                    {reason.label}
-                  </option>
+                  <label className="reason-option" key={reason.id}>
+                    <input
+                      type="checkbox"
+                      checked={reasonIds.includes(reason.id)}
+                      onChange={(event) =>
+                        setReasonIds((current) =>
+                          event.target.checked
+                            ? [...current, reason.id]
+                            : current.filter((id) => id !== reason.id),
+                        )
+                      }
+                    />
+                    <span>{reason.label}</span>
+                  </label>
                 ))}
-              </select>
-            </label>
+              </div>
+            </fieldset>
             <label>
               Objet
               <input

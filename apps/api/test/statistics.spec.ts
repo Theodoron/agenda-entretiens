@@ -13,6 +13,24 @@ describe('statistiques des entretiens', () => {
     expect(result.repeatReasons).toEqual([{ label: 'Orientation', count: 2 }]);
   });
 
+  it('compte chaque motif sélectionné sans dupliquer le nombre de rendez-vous', () => {
+    const result = buildStatistics([{
+      studentId: 'a',
+      status: 'BOOKED',
+      reasons: ['Orientation-réorientation', 'Candidature formation'],
+      component: 'Sciences',
+      degree: 'Licence',
+      academicYear: '2026-2027',
+      createdAt: new Date('2026-01-01'),
+      startsAt: new Date('2026-01-10'),
+    }]);
+    expect(result.totals.appointments).toBe(1);
+    expect(result.reasons).toEqual([
+      { label: 'Candidature formation', count: 1 },
+      { label: 'Orientation-réorientation', count: 1 },
+    ]);
+  });
+
   it('masque les ventilations sous le seuil de confidentialité', () => {
     const base = { studentId: 'a', status: 'BOOKED', component: 'Sciences', degree: 'Licence', academicYear: '2026-2027', createdAt: new Date('2026-01-01'), startsAt: new Date('2026-01-10') };
     const statistics = buildStatistics([
