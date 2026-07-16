@@ -373,9 +373,12 @@ function CommunicationsHub({
                   <small>
                     {new Date(item.createdAt).toLocaleString("fr-FR")}
                   </small>
-                  {role === "advisor" &&
+                  {((role === "advisor" &&
                     item.authorRole === "ADVISOR" &&
-                    item.authorId === details?.advisorId && (
+                    item.authorId === details?.advisorId) ||
+                    (role === "student" &&
+                      item.authorRole === "STUDENT" &&
+                      item.authorId === details?.studentId)) && (
                       <div className="message-actions no-print">
                         <button
                           className="danger compact message-delete"

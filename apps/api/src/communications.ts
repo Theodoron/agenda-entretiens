@@ -17,8 +17,8 @@ export function canDeleteSharedContent(isAdvisor: boolean, authorId: string, use
   return isAdvisor && authorId === userId;
 }
 
-export function canDeleteSharedMessage(isAdvisor: boolean, authorId: string, userId: string): boolean {
-  return isAdvisor && authorId === userId;
+export function canDeleteSharedMessage(isParticipant: boolean, authorId: string, userId: string): boolean {
+  return isParticipant && authorId === userId;
 }
 
 export function messageAuthorRole(authorId: string, studentId: string, advisorId: string): 'STUDENT' | 'ADVISOR' | 'ADMIN' {
@@ -78,8 +78,8 @@ export class CommunicationsService {
       throw new NotFoundException('Message introuvable');
     }
     const access = await this.access(userId, appointmentId);
-    if (!canDeleteSharedMessage(access.isAdvisor, message.authorId, userId)) {
-      throw new ForbiddenException('Un conseiller peut uniquement supprimer ses propres messages');
+    if (!canDeleteSharedMessage(access.isAdvisor || access.isStudent, message.authorId, userId)) {
+      throw new ForbiddenException('Vous pouvez uniquement supprimer vos propres messages');
     }
     await this.prisma.$transaction(async tx => {
       await tx.message.delete({ where: { id } });

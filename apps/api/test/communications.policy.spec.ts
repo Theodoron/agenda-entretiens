@@ -17,9 +17,10 @@ describe('visibilité des notes internes', () => {
     expect(canDeleteSharedContent(true, 'other-advisor-id', 'advisor-id')).toBe(false);
     expect(canDeleteSharedContent(false, 'student-id', 'student-id')).toBe(false);
   });
-  it('réserve la suppression d’un message au conseiller qui l’a envoyé', () => {
+  it('réserve la suppression d’un message au participant qui l’a envoyé', () => {
     expect(canDeleteSharedMessage(true, 'advisor-id', 'advisor-id')).toBe(true);
+    expect(canDeleteSharedMessage(true, 'student-id', 'student-id')).toBe(true);
     expect(canDeleteSharedMessage(true, 'student-id', 'advisor-id')).toBe(false);
-    expect(canDeleteSharedMessage(false, 'student-id', 'student-id')).toBe(false);
+    expect(canDeleteSharedMessage(false, 'admin-id', 'admin-id')).toBe(false);
   });
 });
