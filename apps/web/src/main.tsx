@@ -1967,7 +1967,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
 
 function App() {
   const [user, setUser] = useState<User | null>(null),
-    [email, setEmail] = useState("etudiant@example.test"),
+    [email, setEmail] = useState("conseiller@example.test"),
     [password, setPassword] = useState("Demo-Agenda-2026!"),
     [error, setError] = useState(""),
     [showProfile, setShowProfile] = useState(false),
@@ -2097,8 +2097,8 @@ function App() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 >
-                  <option value="etudiant@example.test">Étudiant</option>
                   <option value="conseiller@example.test">Conseiller</option>
+                  <option value="etudiant@example.test">Étudiant</option>
                   <option value="admin@example.test">Administrateur</option>
                 </select>
               </label>
