@@ -17,6 +17,10 @@ export function canDeleteSharedContent(isAdvisor: boolean, authorId: string, use
   return isAdvisor && authorId === userId;
 }
 
+export function canDeleteSharedMessage(isAdvisor: boolean, authorId: string, userId: string): boolean {
+  return isAdvisor && authorId === userId;
+}
+
 export function messageAuthorRole(authorId: string, studentId: string, advisorId: string): 'STUDENT' | 'ADVISOR' | 'ADMIN' {
   if (authorId === studentId) return 'STUDENT';
   if (authorId === advisorId) return 'ADVISOR';
@@ -68,6 +72,22 @@ export class CommunicationsService {
     });
   }
 
+  async removeMessage(userId: string, appointmentId: string, id: string) {
+    const message = await this.prisma.message.findUnique({ where: { id } });
+    if (!message || message.appointmentId !== appointmentId || message.visibility !== 'SHARED') {
+      throw new NotFoundException('Message introuvable');
+    }
+    const access = await this.access(userId, appointmentId);
+    if (!canDeleteSharedMessage(access.isAdvisor, message.authorId, userId)) {
+      throw new ForbiddenException('Un conseiller peut uniquement supprimer ses propres messages');
+    }
+    await this.prisma.$transaction(async tx => {
+      await tx.message.delete({ where: { id } });
+      await tx.auditLog.create({ data: { actorId: userId, action: 'message.deleted', resourceType: 'Message', resourceId: id, metadata: { appointmentId } } });
+    });
+    return { deleted: true };
+  }
+
   async notes(userId: string, appointmentId: string) {
     const access = await this.access(userId, appointmentId);
     if (!canReadInternalNote(access.isAdvisor, access.isAdmin)) throw new ForbiddenException('Les notes internes sont réservées aux conseillers');
@@ -115,6 +135,7 @@ export class CommunicationsController {
   constructor(private readonly communications: CommunicationsService) {}
   @Get('messages') messages(@Req() req: Request, @Param('appointmentId') id: string) { return this.communications.messages(requireUserId(req), id); }
   @Post('messages') addMessage(@Req() req: Request, @Param('appointmentId') id: string, @Body() dto: ContentDto) { return this.communications.addMessage(requireUserId(req), id, dto); }
+  @Delete('messages/:messageId') removeMessage(@Req() req: Request, @Param('appointmentId') appointmentId: string, @Param('messageId') id: string) { return this.communications.removeMessage(requireUserId(req), appointmentId, id); }
   @Get('internal-notes') notes(@Req() req: Request, @Param('appointmentId') id: string) { return this.communications.notes(requireUserId(req), id); }
   @Post('internal-notes') addNote(@Req() req: Request, @Param('appointmentId') id: string, @Body() dto: ContentDto) { return this.communications.addNote(requireUserId(req), id, dto); }
   @Get('shared-contents') sharedContents(@Req() req: Request, @Param('appointmentId') id: string) { return this.communications.sharedContents(requireUserId(req), id); }

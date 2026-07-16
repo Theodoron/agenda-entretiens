@@ -253,6 +253,18 @@ function CommunicationsHub({
       setError((value as Error).message);
     }
   }
+  async function removeMessage(item: Communication) {
+    if (!window.confirm("Supprimer définitivement ce message partagé ?")) return;
+    setError("");
+    try {
+      await api(`/appointments/${currentId}/messages/${item.id}`, {
+        method: "DELETE",
+      });
+      await reload();
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
   return (
     <section className="communications">
       <div className="sheet-heading">
@@ -361,6 +373,17 @@ function CommunicationsHub({
                   <small>
                     {new Date(item.createdAt).toLocaleString("fr-FR")}
                   </small>
+                  {role === "advisor" &&
+                    item.authorRole === "ADVISOR" &&
+                    item.authorId === details?.advisorId && (
+                      <button
+                        className="danger compact message-delete no-print"
+                        onClick={() => removeMessage(item)}
+                        type="button"
+                      >
+                        Supprimer
+                      </button>
+                    )}
                 </article>
               ))
             ) : (
