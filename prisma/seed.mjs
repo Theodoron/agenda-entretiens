@@ -50,8 +50,8 @@ async function main() {
   }
   const passwordHash = await hash('Demo-Agenda-2026!', { memoryCost: 19456, timeCost: 2 });
   const demos = [
-    ['etudiant@example.test', 'Camille', 'Martin', 'STUDENT'],
-    ['conseiller@example.test', 'Sophie', 'Bernard', 'ADVISOR'],
+    ['etudiant@example.test', 'Rayan', 'Cherki', 'STUDENT'],
+    ['conseiller@example.test', 'Didier', 'Deschamps', 'ADVISOR'],
     ['admin@example.test', 'Alex', 'Robert', 'ADMIN'],
   ];
   for (const [email, firstName, lastName, code] of demos) {
@@ -63,8 +63,8 @@ async function main() {
     const role = await prisma.role.findUniqueOrThrow({ where: { code } });
     await prisma.userRole.upsert({ where: { userId_roleId: { userId: user.id, roleId: role.id } }, update: {}, create: { userId: user.id, roleId: role.id } });
     await prisma.authIdentity.upsert({ where: { provider_subject: { provider: 'DEV', subject: email } }, update: { passwordHash, userId: user.id }, create: { provider: 'DEV', subject: email, passwordHash, userId: user.id } });
-    if (code === 'STUDENT') await prisma.studentProfile.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id, universityId: 'U20260001' } });
-    if (code === 'ADVISOR') await prisma.advisorProfile.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id, title: 'Conseillère en orientation' } });
+    if (code === 'STUDENT') await prisma.studentProfile.upsert({ where: { userId: user.id }, update: { gender: 'MAN' }, create: { userId: user.id, universityId: 'U20260001', gender: 'MAN' } });
+    if (code === 'ADVISOR') await prisma.advisorProfile.upsert({ where: { userId: user.id }, update: { title: 'Conseiller en orientation' }, create: { userId: user.id, title: 'Conseiller en orientation' } });
   }
 }
 
