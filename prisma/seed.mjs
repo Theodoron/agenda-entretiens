@@ -16,6 +16,7 @@ async function main() {
     'Candidature formation',
     'Information césure',
     'Dossier césure',
+    'Autre (précisez dans l’objet ou la description de votre demande)',
   ];
   await prisma.interviewReason.updateMany({
     where: { label: { notIn: interviewReasons } },

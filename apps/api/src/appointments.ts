@@ -9,7 +9,7 @@ import { canStudentAccessAppointment, canStudentCancel, canTransition, isCancell
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
-  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(6) @ArrayUnique() @IsUUID(undefined, { each: true }) reasonIds!: string[];
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(7) @ArrayUnique() @IsUUID(undefined, { each: true }) reasonIds!: string[];
   @IsString() @MinLength(3) @MaxLength(160) subject!: string;
   @IsString() @MinLength(10) @MaxLength(4000) description!: string;
   @IsOptional() @IsEnum(AppointmentMode) preferredMode?: AppointmentMode;
