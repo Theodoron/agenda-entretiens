@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 
 type DatePickerProps = {
   label: string;
-  value: string;
+  value: string[];
   min?: string;
-  onChange: (value: string) => void;
+  onChange: (value: string[]) => void;
 };
 
 const capitalizeDatePart = (value: string) =>
@@ -19,10 +19,10 @@ export function DatePicker({
   min,
   onChange,
 }: DatePickerProps) {
-  const initialDate = value ? new Date(`${value}T12:00:00`) : new Date();
+  const initialDate = value[0] ? new Date(`${value[0]}T12:00:00`) : new Date();
   const pickerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [draftValue, setDraftValue] = useState(value);
+  const [draftValue, setDraftValue] = useState<string[]>(value);
   const [visibleMonth, setVisibleMonth] = useState(
     new Date(initialDate.getFullYear(), initialDate.getMonth(), 1),
   );
@@ -36,13 +36,9 @@ export function DatePicker({
     visibleMonth.getMonth() + 1,
     0,
   ).getDate();
-  const displayedValue = value
-    ? capitalizeDatePart(
-        new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(
-          new Date(`${value}T12:00:00`),
-        ),
-      )
-    : "jj/mm/aaaa";
+  const displayedValue = value.length
+    ? `${value.length} date${value.length > 1 ? "s" : ""} sélectionnée${value.length > 1 ? "s" : ""}`
+    : "Choisir les dates";
 
   useEffect(() => {
     if (!open) return;
@@ -62,17 +58,25 @@ export function DatePicker({
 
   function toggle() {
     if (!open) {
-      setDraftValue(value);
-      const source = value ? new Date(`${value}T12:00:00`) : new Date();
+      setDraftValue([...value]);
+      const source = value[0] ? new Date(`${value[0]}T12:00:00`) : new Date();
       setVisibleMonth(new Date(source.getFullYear(), source.getMonth(), 1));
     }
     setOpen((current) => !current);
   }
 
   function confirm() {
-    if (!draftValue) return;
-    onChange(draftValue);
+    if (!draftValue.length) return;
+    onChange([...draftValue].sort());
     setOpen(false);
+  }
+
+  function toggleDate(date: string) {
+    setDraftValue((current) =>
+      current.includes(date)
+        ? current.filter((item) => item !== date)
+        : [...current, date].sort(),
+    );
   }
 
   return (
@@ -155,11 +159,11 @@ export function DatePicker({
               const disabled = Boolean(min && date < min);
               return (
                 <button
-                  aria-selected={date === draftValue}
-                  className={date === draftValue ? "selected" : ""}
+                  aria-selected={draftValue.includes(date)}
+                  className={draftValue.includes(date) ? "selected" : ""}
                   disabled={disabled}
                   key={date}
-                  onClick={() => setDraftValue(date)}
+                  onClick={() => toggleDate(date)}
                   role="gridcell"
                   type="button"
                 >
@@ -168,13 +172,20 @@ export function DatePicker({
               );
             })}
           </div>
+          <p className="calendar-selection-count" role="status">
+            {draftValue.length
+              ? `${draftValue.length} date${draftValue.length > 1 ? "s" : ""} sélectionnée${draftValue.length > 1 ? "s" : ""}`
+              : "Aucune date sélectionnée"}
+          </p>
           <button
             className="calendar-close"
-            disabled={!draftValue}
+            disabled={!draftValue.length}
             onClick={confirm}
             type="button"
           >
-            Valider
+            {draftValue.length
+              ? `Ajouter ${draftValue.length} date${draftValue.length > 1 ? "s" : ""}`
+              : "Ajouter les dates sélectionnées"}
           </button>
         </section>
       )}

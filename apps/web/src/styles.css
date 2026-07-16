@@ -739,35 +739,8 @@ textarea {
 .repeat-dates {
   background: #faf7fd;
 }
-.repeat-date-controls {
-  display: flex;
-  align-items: end;
-  gap: 0.8rem;
-}
 .repeat-date-picker {
-  flex: 1;
   margin: 0.5rem 0 0;
-}
-.repeat-date-controls button {
-  margin-bottom: 0;
-}
-.repeat-date-controls .date-time-popover button {
-  margin-bottom: 0;
-}
-.add-repeat-date {
-  min-width: 190px;
-  transition:
-    background 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-}
-.add-repeat-date.confirmed {
-  border-color: #4f8b77;
-  background: #e2f3ed;
-  color: #285f4d;
-}
-.add-repeat-date.confirmed:hover {
-  background: #e2f3ed;
 }
 .repeat-date-list {
   display: grid;
@@ -789,13 +762,6 @@ textarea {
   .date-time-row {
     grid-template-columns: 1fr;
     gap: 0;
-  }
-  .repeat-date-controls {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .repeat-date-controls .add-repeat-date {
-    width: 100%;
   }
 }
 .date-time-label {
@@ -909,6 +875,13 @@ textarea {
 .time-fields input {
   background: #f5f0fa;
   color: #32185b;
+  text-align: center;
+}
+.calendar-selection-count {
+  margin: 0.8rem 0 0;
+  color: #4e2a84;
+  font-size: 0.9rem;
+  font-weight: 700;
   text-align: center;
 }
 .time-picker-popover {

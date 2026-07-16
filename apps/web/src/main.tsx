@@ -1065,9 +1065,7 @@ function AdvisorDashboard() {
     [duration, setDuration] = useState(45),
     [mode, setMode] = useState("IN_PERSON"),
     [videoUrl, setVideoUrl] = useState(""),
-    [repeatDate, setRepeatDate] = useState(""),
     [selectedDates, setSelectedDates] = useState<string[]>([]),
-    [dateAdded, setDateAdded] = useState(false),
     [notice, setNotice] = useState(""),
     [sheetId, setSheetId] = useState(""),
     [cancellingId, setCancellingId] = useState("");
@@ -1076,33 +1074,6 @@ function AdvisorDashboard() {
   useEffect(() => {
     reload();
   }, []);
-  function addSelectedDate() {
-    setNotice("");
-    if (!startTime || !endTime) {
-      setNotice("Définissez d’abord les heures de début et de fin.");
-      return;
-    }
-    if (endTime <= startTime) {
-      setNotice("L’heure de fin doit être postérieure à l’heure de début.");
-      return;
-    }
-    if (!repeatDate) {
-      setNotice("Choisissez une date.");
-      return;
-    }
-    if (selectedDates.includes(repeatDate)) {
-      setNotice("Cette date a déjà été ajoutée.");
-      return;
-    }
-    if (new Date(localDateTimeIso(repeatDate, startTime)) <= new Date()) {
-      setNotice("La plage doit commencer dans le futur.");
-      return;
-    }
-    setSelectedDates((current) => [...current, repeatDate].sort());
-    setRepeatDate("");
-    setDateAdded(true);
-    window.setTimeout(() => setDateAdded(false), 1800);
-  }
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setNotice("");
@@ -1142,7 +1113,6 @@ function AdvisorDashboard() {
       );
       setStartTime("");
       setEndTime("");
-      setRepeatDate("");
       setSelectedDates([]);
       await reload();
     } catch (value) {
@@ -1360,26 +1330,20 @@ function AdvisorDashboard() {
           <fieldset className="repeat-dates availability-step">
             <legend>2. Choisir une ou plusieurs dates</legend>
             <p className="hint">
-              Sélectionnez une date, ajoutez-la, puis recommencez si nécessaire.
+              Cliquez sur toutes les dates souhaitées, puis validez la sélection
+              en une seule fois.
             </p>
-            <div className="repeat-date-controls">
-              <DatePicker
-                label="Date de la plage"
-                min={localDateValue(new Date())}
-                onChange={(value) => {
-                  setRepeatDate(value);
-                  setDateAdded(false);
-                }}
-                value={repeatDate}
-              />
-              <button
-                className={`secondary compact add-repeat-date${dateAdded ? " confirmed" : ""}`}
-                onClick={addSelectedDate}
-                type="button"
-              >
-                {dateAdded ? "Date ajoutée ✓" : "Ajouter cette date"}
-              </button>
-            </div>
+            <DatePicker
+              label="Dates des plages"
+              min={localDateValue(new Date())}
+              onChange={(values) => {
+                setSelectedDates(values);
+                setNotice(
+                  `${values.length} date${values.length > 1 ? "s" : ""} prise${values.length > 1 ? "s" : ""} en compte.`,
+                );
+              }}
+              value={selectedDates}
+            />
             {selectedDates.length > 0 && (
               <ul className="repeat-date-list">
                 {selectedDates.map((date) => (
