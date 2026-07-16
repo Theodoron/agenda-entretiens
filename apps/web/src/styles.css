@@ -380,8 +380,13 @@
   color: #176b64;
 }
 .message-delete {
+  display: block;
   width: auto;
-  margin-top: 0.65rem;
+  min-height: 0;
+  margin: 0.55rem 0 0 auto;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
 }
 .documents-panel {
   margin-top: 1.5rem;
