@@ -376,13 +376,15 @@ function CommunicationsHub({
                   {role === "advisor" &&
                     item.authorRole === "ADVISOR" &&
                     item.authorId === details?.advisorId && (
-                      <button
-                        className="danger compact message-delete no-print"
-                        onClick={() => removeMessage(item)}
-                        type="button"
-                      >
-                        Supprimer
-                      </button>
+                      <div className="message-actions no-print">
+                        <button
+                          className="danger compact message-delete"
+                          onClick={() => removeMessage(item)}
+                          type="button"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
                     )}
                 </article>
               ))

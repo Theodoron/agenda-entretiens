@@ -379,11 +379,15 @@
 .thread article.message-student strong {
   color: #176b64;
 }
+.message-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.55rem;
+}
 .message-delete {
-  display: block;
   width: auto;
   min-height: 0;
-  margin: 0.55rem 0 0 auto;
+  margin: 0;
   padding: 0.35rem 0.65rem;
   border-radius: 8px;
   font-size: 0.78rem;
