@@ -733,6 +733,9 @@ textarea {
 .time-range-row label {
   margin: 0.5rem 0 0;
 }
+.time-range-row .date-time-field {
+  margin: 0.5rem 0 0;
+}
 .repeat-dates {
   background: #faf7fd;
 }
@@ -888,6 +891,42 @@ textarea {
   background: #f5f0fa;
   color: #32185b;
   text-align: center;
+}
+.time-picker-popover {
+  width: min(290px, calc(100vw - 2rem));
+  text-align: center;
+}
+.time-selectors {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+.time-selectors label {
+  margin: 0;
+  color: #675d70;
+  font-size: 0.82rem;
+  text-align: left;
+}
+.time-selectors select {
+  padding: 0.75rem 0.55rem;
+  background: #f5f0fa;
+  color: #32185b;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}
+.time-selectors > span {
+  padding-bottom: 0.85rem;
+  color: #4e2a84;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.time-picker-error {
+  margin: 0.75rem 0 0;
+  color: #a12e3f;
+  font-size: 0.86rem;
 }
 .calendar-close {
   margin-top: 1rem;

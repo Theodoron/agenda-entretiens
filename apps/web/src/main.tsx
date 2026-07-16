@@ -4,6 +4,7 @@ import { api } from "./api";
 import { CancellationDialog } from "./components/CancellationDialog";
 import { DatePicker } from "./components/DatePicker";
 import { ReservationDialog } from "./components/ReservationDialog";
+import { TimePicker } from "./components/TimePicker";
 import "./styles.css";
 
 type Role = "STUDENT" | "ADVISOR" | "ADMIN";
@@ -1338,25 +1339,22 @@ function AdvisorDashboard() {
               Ces horaires seront appliqués à toutes les dates sélectionnées.
             </p>
             <div className="date-time-row time-range-row">
-              <label>
-                Heure de début
-                <input
-                  onChange={(event) => setStartTime(event.target.value)}
-                  required
-                  type="time"
-                  value={startTime}
-                />
-              </label>
-              <label>
-                Heure de fin
-                <input
-                  min={startTime}
-                  onChange={(event) => setEndTime(event.target.value)}
-                  required
-                  type="time"
-                  value={endTime}
-                />
-              </label>
+              <TimePicker
+                defaultTime="09:00"
+                label="Heure de début"
+                onChange={(value) => {
+                  setStartTime(value);
+                  if (endTime && endTime <= value) setEndTime("");
+                }}
+                value={startTime}
+              />
+              <TimePicker
+                defaultTime="12:00"
+                label="Heure de fin"
+                min={startTime || undefined}
+                onChange={setEndTime}
+                value={endTime}
+              />
             </div>
           </fieldset>
           <fieldset className="repeat-dates availability-step">
