@@ -654,6 +654,9 @@ h1 {
   line-height: 1.08;
   margin: 0.5rem 0;
 }
+.login #login-title {
+  font-size: clamp(2rem, 4.2vw, 3.8rem);
+}
 form,
 .notice {
   background: #fff;
