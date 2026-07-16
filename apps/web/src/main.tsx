@@ -830,8 +830,8 @@ function StudentDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Mes rendez-vous</p>
-        <h1>Mon tableau de bord</h1>
-        <h2>À venir</h2>
+        <h1 className="student-dashboard-title">Mon tableau de bord</h1>
+        <h2 className="student-upcoming-title">À venir</h2>
         {appointmentTable(upcomingAppointments, "Aucun rendez-vous à venir.")}
       </section>
       {sheetId && (

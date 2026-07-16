@@ -895,6 +895,12 @@ button.header-button {
 .dashboard h1 {
   font-size: clamp(2.2rem, 5vw, 3.5rem);
 }
+.student-dashboard-title {
+  color: #4e2a84;
+}
+.student-upcoming-title {
+  margin-top: 1.75rem;
+}
 .dashboard form {
   width: 100%;
   max-width: none;
