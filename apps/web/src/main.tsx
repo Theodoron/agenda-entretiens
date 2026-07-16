@@ -1795,7 +1795,7 @@ function App() {
           <section className="login" aria-labelledby="login-title">
             <div>
               <p className="eyebrow">Bienvenue</p>
-              <h1 id="login-title">Organisez vos entretiens simplement</h1>
+              <h1 id="login-title">Mobiliser un entretien individuel</h1>
               <p className="lead">
                 Réservez un échange avec le service d’orientation et retrouvez
                 toutes les informations utiles au même endroit.
