@@ -13,7 +13,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:drift": "prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code",
     "db:seed": "prisma db seed",
-    "start:prod": "prisma db push --skip-generate && prisma db seed && node apps/api/dist/src/main.js"
+    "start:prod": "node prisma/predeploy.mjs && prisma db push --skip-generate && prisma db seed && node apps/api/dist/src/main.js"
   },
   "dependencies": {
     "prisma": "^6.8.2"
