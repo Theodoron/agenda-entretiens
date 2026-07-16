@@ -42,6 +42,11 @@
 .statistics-page {
   width: 100%;
 }
+.advisor-history-page {
+  display: grid;
+  width: 100%;
+  gap: 2rem;
+}
 .stat-cards .card strong {
   font-size: 2rem;
   color: #4e2a84;

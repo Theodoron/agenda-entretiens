@@ -935,6 +935,111 @@ function StudentDashboard() {
   );
 }
 
+function AdvisorHistory({ onClose }: { onClose: () => void }) {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [sheetId, setSheetId] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api<Appointment[]>("/appointments")
+      .then(setAppointments)
+      .catch((value) => setError((value as Error).message));
+  }, []);
+
+  const historicalAppointments = appointments
+    .filter((item) => !isUpcomingAppointment(item))
+    .sort(
+      (a, b) =>
+        new Date(b.availability.startsAt).getTime() -
+        new Date(a.availability.startsAt).getTime(),
+    );
+
+  return (
+    <div className="advisor-history-page">
+      <section>
+        <div className="sheet-heading">
+          <div>
+            <p className="eyebrow">Agenda conseiller</p>
+            <h1>Historique</h1>
+          </div>
+          <button className="secondary compact" onClick={onClose}>
+            Retour au tableau de bord
+          </button>
+        </div>
+        <p className="lead">
+          Retrouvez les entretiens passés, réalisés, annulés ou non honorés.
+        </p>
+        {error && (
+          <div className="error" role="alert">
+            {error}
+          </div>
+        )}
+        {historicalAppointments.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nom et prénom</th>
+                  <th>Numéro étudiant</th>
+                  <th>Date et heure</th>
+                  <th>Objet</th>
+                  <th>Statut</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {historicalAppointments.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      {item.student.user.lastName} {item.student.user.firstName}
+                    </td>
+                    <td>{item.student.universityId}</td>
+                    <td className="table-date">
+                      {formatDate(item.availability.startsAt)}
+                    </td>
+                    <td>{item.request.subject}</td>
+                    <td>
+                      <span
+                        className={[
+                          "CANCELLED_BY_ADVISOR",
+                          "CANCELLED_BY_ADMIN",
+                        ].includes(item.status)
+                          ? "status cancelled-by-advisor"
+                          : "status"}
+                      >
+                        {formatStatus(item.status)}
+                      </span>
+                    </td>
+                    <td className="table-actions">
+                      <button
+                        className="compact"
+                        onClick={() => setSheetId(item.id)}
+                      >
+                        Fiche entretien
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="empty">Aucun entretien dans l’historique.</p>
+        )}
+      </section>
+      {sheetId && (
+        <CommunicationsHub
+          role="advisor"
+          appointmentId={sheetId}
+          onClose={() => setSheetId("")}
+        />
+      )}
+    </div>
+  );
+}
+
 function AdvisorDashboard() {
   const [schedule, setSchedule] = useState<AdvisorSlot[]>([]),
     [startsAt, setStartsAt] = useState(""),
@@ -1700,7 +1805,8 @@ function App() {
     [password, setPassword] = useState("Demo-Agenda-2026!"),
     [error, setError] = useState(""),
     [showProfile, setShowProfile] = useState(false),
-    [showStatistics, setShowStatistics] = useState(false);
+    [showStatistics, setShowStatistics] = useState(false),
+    [showAdvisorHistory, setShowAdvisorHistory] = useState(false);
   useEffect(() => {
     api<User>("/me")
       .then(setUser)
@@ -1725,6 +1831,7 @@ function App() {
     setUser(null);
     setShowProfile(false);
     setShowStatistics(false);
+    setShowAdvisorHistory(false);
   }
   const role = user?.roles[0]?.role.code;
   return (
@@ -1737,12 +1844,25 @@ function App() {
         <span>Centre d’Information de Documentation et d’Orientation</span>
         {user && (
           <div className="header-actions">
+            {role === "ADVISOR" && (
+              <button
+                className="header-button"
+                onClick={() => {
+                  setShowAdvisorHistory(true);
+                  setShowStatistics(false);
+                  setShowProfile(false);
+                }}
+              >
+                Historique
+              </button>
+            )}
             {role !== "STUDENT" && (
               <button
                 className="header-button"
                 onClick={() => {
                   setShowStatistics(true);
                   setShowProfile(false);
+                  setShowAdvisorHistory(false);
                 }}
               >
                 Statistiques
@@ -1754,6 +1874,7 @@ function App() {
                 onClick={() => {
                   setShowProfile(true);
                   setShowStatistics(false);
+                  setShowAdvisorHistory(false);
                 }}
               >
                 Mon profil
@@ -1766,7 +1887,9 @@ function App() {
         )}
       </header>
       <main id="main">
-        {user && showStatistics && role !== "STUDENT" ? (
+        {user && showAdvisorHistory && role === "ADVISOR" ? (
+          <AdvisorHistory onClose={() => setShowAdvisorHistory(false)} />
+        ) : user && showStatistics && role !== "STUDENT" ? (
           <StatisticsDashboard onClose={() => setShowStatistics(false)} />
         ) : user && showProfile && role !== "ADMIN" ? (
           <Profile
