@@ -908,6 +908,7 @@ legend {
   gap: 0.7rem;
   margin: 0;
   padding: 0.5rem 0.85rem;
+  font-weight: 400;
   cursor: pointer;
 }
 .reason-option + .reason-option {
