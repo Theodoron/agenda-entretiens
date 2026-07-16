@@ -897,20 +897,22 @@ legend {
 }
 .reason-options {
   display: grid;
-  gap: 0.55rem;
+  overflow: hidden;
+  border: 2px solid #d9d2df;
+  border-radius: 12px;
+  background: #fff;
 }
 .reason-option {
   display: flex;
   align-items: center;
   gap: 0.7rem;
   padding: 0.75rem 0.85rem;
-  border: 2px solid #d9d2df;
-  border-radius: 12px;
-  background: #fff;
   cursor: pointer;
 }
+.reason-option + .reason-option {
+  border-top: 1px solid #e7e1eb;
+}
 .reason-option:has(input:checked) {
-  border-color: #4e2a84;
   background: #f1edf5;
 }
 .reason-option input {
