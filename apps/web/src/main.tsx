@@ -1066,6 +1066,7 @@ function AdvisorDashboard() {
     [mode, setMode] = useState("IN_PERSON"),
     [videoUrl, setVideoUrl] = useState(""),
     [selectedDates, setSelectedDates] = useState<string[]>([]),
+    [selectedFreeSlotIds, setSelectedFreeSlotIds] = useState<string[]>([]),
     [notice, setNotice] = useState(""),
     [sheetId, setSheetId] = useState(""),
     [cancellingId, setCancellingId] = useState("");
@@ -1137,11 +1138,47 @@ function AdvisorDashboard() {
     try {
       await api(`/availabilities/${id}`, { method: "DELETE" });
       setNotice("Créneau annulé.");
+      setSelectedFreeSlotIds((current) =>
+        current.filter((selectedId) => selectedId !== id),
+      );
       await reload();
     } catch (value) {
       setNotice((value as Error).message);
     }
   }
+  async function cancelSelectedSlots() {
+    if (!selectedFreeSlotIds.length) return;
+    const count = selectedFreeSlotIds.length;
+    if (
+      !window.confirm(
+        `Supprimer les ${count} créneaux libres sélectionnés ?`,
+      )
+    )
+      return;
+    try {
+      const result = await api<{ count: number }>(
+        "/availabilities/cancel-batch",
+        {
+          method: "POST",
+          body: JSON.stringify({ ids: selectedFreeSlotIds }),
+        },
+      );
+      setNotice(
+        `${result.count} créneau${result.count > 1 ? "x" : ""} supprimé${result.count > 1 ? "s" : ""}.`,
+      );
+      setSelectedFreeSlotIds([]);
+      await reload();
+    } catch (value) {
+      setNotice((value as Error).message);
+      await reload();
+    }
+  }
+  const freeSlots = schedule.filter(
+    (slot) => !slot.appointment && slot.status === "AVAILABLE",
+  );
+  const allFreeSlotsSelected =
+    freeSlots.length > 0 &&
+    freeSlots.every((slot) => selectedFreeSlotIds.includes(slot.id));
   return (
     <div className="dashboard">
       <section>
@@ -1247,11 +1284,42 @@ function AdvisorDashboard() {
           />
         )}
         <h2 className="subsection-title">Créneaux libres</h2>
-        {schedule.some((slot) => !slot.appointment) ? (
-          <div className="table-wrap">
-            <table>
+        {freeSlots.length ? (
+          <>
+            <div className="free-slot-selection-actions">
+              <label>
+                <input
+                  checked={allFreeSlotsSelected}
+                  onChange={(event) =>
+                    setSelectedFreeSlotIds(
+                      event.target.checked
+                        ? freeSlots.map((slot) => slot.id)
+                        : [],
+                    )
+                  }
+                  type="checkbox"
+                />
+                Tout sélectionner
+              </label>
+              <button
+                className="danger compact"
+                disabled={!selectedFreeSlotIds.length}
+                onClick={cancelSelectedSlots}
+                type="button"
+              >
+                Supprimer les créneaux sélectionnés
+                {selectedFreeSlotIds.length
+                  ? ` (${selectedFreeSlotIds.length})`
+                  : ""}
+              </button>
+            </div>
+            <div className="table-wrap">
+              <table>
               <thead>
                 <tr>
+                  <th className="selection-column">
+                    <span className="sr-only">Sélection</span>
+                  </th>
                   <th>Date et heure</th>
                   <th>Fin</th>
                   <th>Modalité</th>
@@ -1262,10 +1330,25 @@ function AdvisorDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {schedule
-                  .filter((slot) => !slot.appointment)
-                  .map((slot) => (
-                    <tr className="free-slot" key={slot.id}>
+                {freeSlots.map((slot) => (
+                    <tr
+                      className={`free-slot${selectedFreeSlotIds.includes(slot.id) ? " selected-free-slot" : ""}`}
+                      key={slot.id}
+                    >
+                      <td className="selection-column">
+                        <input
+                          aria-label={`Sélectionner le créneau du ${formatDate(slot.startsAt)}`}
+                          checked={selectedFreeSlotIds.includes(slot.id)}
+                          onChange={(event) =>
+                            setSelectedFreeSlotIds((current) =>
+                              event.target.checked
+                                ? [...current, slot.id]
+                                : current.filter((id) => id !== slot.id),
+                            )
+                          }
+                          type="checkbox"
+                        />
+                      </td>
                       <td className="table-date">{formatDate(slot.startsAt)}</td>
                       <td>
                         {new Intl.DateTimeFormat("fr-FR", {
@@ -1289,8 +1372,9 @@ function AdvisorDashboard() {
                     </tr>
                   ))}
               </tbody>
-            </table>
-          </div>
+              </table>
+            </div>
+          </>
         ) : (
           <p className="empty">Aucun créneau libre.</p>
         )}

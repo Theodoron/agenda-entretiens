@@ -294,6 +294,41 @@
   background: #dff3e5;
   color: #185c37;
 }
+.free-slot-selection-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.free-slot-selection-actions label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+}
+.free-slot-selection-actions input,
+.selection-column input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: #4e2a84;
+}
+.selection-column {
+  width: 46px;
+  text-align: center !important;
+}
+.selected-free-slot td {
+  background: #f5f0fa;
+}
+@media (max-width: 760px) {
+  .free-slot-selection-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .free-slot-selection-actions button {
+    width: 100%;
+  }
+}
 .link-button {
   width: auto;
   padding: 0;

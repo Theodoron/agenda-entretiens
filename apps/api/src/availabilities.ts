@@ -29,6 +29,10 @@ class CreateBatchDto {
   @IsOptional() @IsInt() @Min(0) @Max(120) bufferMinutes?: number;
 }
 
+class CancelBatchDto {
+  @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsUUID('4', { each: true }) ids!: string[];
+}
+
 export function weeklySlots(first: Date, durationMinutes: number, occurrences: number) {
   return Array.from({ length: occurrences }, (_, index) => {
     const startsAt = new Date(first.getTime() + index * 7 * 24 * 60 * 60_000);
@@ -120,6 +124,16 @@ export class AvailabilitiesService {
     if (cancelled.count !== 1) throw new ConflictException('Seul un créneau encore libre peut être annulé');
     return { id, status: 'CANCELLED' };
   }
+  async cancelFreeBatch(userId: string, dto: CancelBatchDto) {
+    await requireRole(this.prisma, userId, 'ADVISOR');
+    if (!dto.ids.length) throw new BadRequestException('Sélectionnez au moins un créneau libre');
+    const cancelled = await this.prisma.availability.updateMany({
+      where: { id: { in: dto.ids }, advisorId: userId, status: 'AVAILABLE' },
+      data: { status: 'CANCELLED', version: { increment: 1 } },
+    });
+    if (!cancelled.count) throw new ConflictException('Aucun des créneaux sélectionnés ne peut être supprimé');
+    return { count: cancelled.count };
+  }
 }
 
 @Controller('v1/availabilities')
@@ -130,5 +144,6 @@ export class AvailabilitiesController {
   @Post('series') createSeries(@Req() req: Request, @Body() dto: CreateSeriesDto) { return this.availabilities.createSeries(requireUserId(req), dto); }
   @Get('advisor/mine') advisorSchedule(@Req() req: Request) { return this.availabilities.advisorSchedule(requireUserId(req)); }
   @Post('batch') createBatch(@Req() req: Request, @Body() dto: CreateBatchDto) { return this.availabilities.createBatch(requireUserId(req), dto); }
+  @Post('cancel-batch') cancelFreeBatch(@Req() req: Request, @Body() dto: CancelBatchDto) { return this.availabilities.cancelFreeBatch(requireUserId(req), dto); }
   @Delete(':id') cancelFree(@Req() req: Request, @Param('id') id: string) { return this.availabilities.cancelFree(requireUserId(req), id); }
 }
