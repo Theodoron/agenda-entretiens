@@ -74,14 +74,6 @@ export class AvailabilitiesService {
       return tx.availabilitySeries.findUniqueOrThrow({ where: { id: series.id }, include: { slots: { orderBy: { startsAt: 'asc' } } } });
     });
   }
-  async hold(userId: string, id: string) {
-    await requireRole(this.prisma, userId, 'STUDENT');
-    const now = new Date();
-    const heldUntil = new Date(now.getTime() + 10 * 60_000);
-    const claimed = await this.prisma.availability.updateMany({ where: { id, startsAt: { gt: now }, OR: [{ status: 'AVAILABLE' }, { status: 'HELD', heldUntil: { lt: now } }, { status: 'HELD', heldByUserId: userId }] }, data: { status: 'HELD', heldByUserId: userId, heldUntil, version: { increment: 1 } } });
-    if (claimed.count !== 1) throw new ConflictException('Ce créneau est temporairement réservé par une autre personne');
-    return { availabilityId: id, heldUntil };
-  }
   async advisorSchedule(userId: string) {
     await requireRole(this.prisma, userId, 'ADVISOR');
     const slots = await this.prisma.availability.findMany({ where: { advisorId: userId, startsAt: { gte: new Date() }, status: { in: ['AVAILABLE', 'HELD', 'BOOKED'] } }, orderBy: { startsAt: 'asc' }, include: { appointment: { include: { request: true, student: { include: { user: { select: { firstName: true, lastName: true } } } } } } } });
@@ -119,5 +111,4 @@ export class AvailabilitiesController {
   @Get('advisor/mine') advisorSchedule(@Req() req: Request) { return this.availabilities.advisorSchedule(requireUserId(req)); }
   @Post('batch') createBatch(@Req() req: Request, @Body() dto: CreateBatchDto) { return this.availabilities.createBatch(requireUserId(req), dto); }
   @Delete(':id') cancelFree(@Req() req: Request, @Param('id') id: string) { return this.availabilities.cancelFree(requireUserId(req), id); }
-  @Post(':id/hold') hold(@Req() req: Request, @Param('id') id: string) { return this.availabilities.hold(requireUserId(req), id); }
 }

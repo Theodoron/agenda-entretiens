@@ -9,6 +9,15 @@ const permissions = {
 };
 
 async function main() {
+  await prisma.availability.updateMany({
+    where: { status: 'HELD' },
+    data: {
+      status: 'AVAILABLE',
+      heldByUserId: null,
+      heldUntil: null,
+      version: { increment: 1 },
+    },
+  });
   const interviewReasons = [
     'Orientation-réorientation',
     'Poursuite d’étude',

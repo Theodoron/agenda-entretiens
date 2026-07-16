@@ -715,21 +715,9 @@ function StudentDashboard() {
   useEffect(() => {
     reload().catch((value) => setError(value.message));
   }, []);
-  async function choose(id: string) {
+  function choose(id: string) {
     setError("");
-    try {
-      const hold = await api<{ heldUntil: string }>(
-        `/availabilities/${id}/hold`,
-        { method: "POST" },
-      );
-      setSelected(id);
-      setMessage(
-        `Créneau réservé jusqu’à ${new Date(hold.heldUntil).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`,
-      );
-    } catch (value) {
-      setError((value as Error).message);
-      await reload();
-    }
+    setSelected(id);
   }
   async function book() {
     setError("");
@@ -756,6 +744,7 @@ function StudentDashboard() {
       return true;
     } catch (value) {
       setError((value as Error).message);
+      await reload();
       return false;
     }
   }
