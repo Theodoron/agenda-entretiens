@@ -1111,7 +1111,9 @@ function AdvisorDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Agenda conseiller</p>
-        <h1 className="agenda-title">Mon tableau de bord</h1>
+        <h1 className="agenda-title advisor-dashboard-title">
+          Mon tableau de bord
+        </h1>
         <h2 className="advisor-upcoming-title">À venir</h2>
         {schedule.some((slot) => slot.appointment) ? (
           <div className="table-wrap">
