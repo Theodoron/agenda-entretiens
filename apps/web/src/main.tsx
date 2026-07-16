@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api } from "./api";
 import { CancellationDialog } from "./components/CancellationDialog";
+import { DatePicker } from "./components/DatePicker";
 import { DateTimePicker } from "./components/DateTimePicker";
 import { ReservationDialog } from "./components/ReservationDialog";
 import "./styles.css";
@@ -1078,6 +1079,7 @@ function AdvisorDashboard() {
     [videoUrl, setVideoUrl] = useState(""),
     [repeatDate, setRepeatDate] = useState(""),
     [additionalDates, setAdditionalDates] = useState<string[]>([]),
+    [dateAdded, setDateAdded] = useState(false),
     [notice, setNotice] = useState(""),
     [sheetId, setSheetId] = useState(""),
     [cancellingId, setCancellingId] = useState("");
@@ -1116,6 +1118,8 @@ function AdvisorDashboard() {
     }
     setAdditionalDates((current) => [...current, repeatDate].sort());
     setRepeatDate("");
+    setDateAdded(true);
+    window.setTimeout(() => setDateAdded(false), 1800);
   }
   async function create(event: React.FormEvent) {
     event.preventDefault();
@@ -1361,21 +1365,26 @@ function AdvisorDashboard() {
               souhaitez proposer exactement la même plage d’entretiens.
             </p>
             <div className="repeat-date-controls">
-              <label>
-                Date supplémentaire
-                <input
-                  min={localDateValue(new Date())}
-                  onChange={(event) => setRepeatDate(event.target.value)}
-                  type="date"
-                  value={repeatDate}
-                />
-              </label>
+              <DatePicker
+                allowedWeekday={
+                  startsAt
+                    ? new Date(`${startsAt.slice(0, 10)}T12:00:00`).getDay()
+                    : undefined
+                }
+                label="Date supplémentaire"
+                min={localDateValue(new Date())}
+                onChange={(value) => {
+                  setRepeatDate(value);
+                  setDateAdded(false);
+                }}
+                value={repeatDate}
+              />
               <button
-                className="secondary compact"
+                className={`secondary compact add-repeat-date${dateAdded ? " confirmed" : ""}`}
                 onClick={addRepeatDate}
                 type="button"
               >
-                Ajouter cette date
+                {dateAdded ? "Date ajoutée ✓" : "Ajouter cette date"}
               </button>
             </div>
             {additionalDates.length > 0 && (
