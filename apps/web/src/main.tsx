@@ -610,7 +610,7 @@ function Profile({
       <div className="sheet-heading">
         <div>
           <p className="eyebrow">Compte</p>
-          <h1>Mon profil</h1>
+          <h1 className="page-title">Mon profil</h1>
         </div>
         <button className="secondary compact" onClick={onClose}>
           Retour au tableau de bord
@@ -837,7 +837,7 @@ function StudentDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Mes rendez-vous</p>
-        <h1 className="student-dashboard-title">Mes entretiens</h1>
+        <h1 className="page-title">Mes entretiens</h1>
         <h2 className="student-upcoming-title">À venir</h2>
         {appointmentTable(upcomingAppointments, "Aucun rendez-vous à venir.")}
       </section>
@@ -967,7 +967,7 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
         <div className="sheet-heading">
           <div>
             <p className="eyebrow">Agenda conseiller</p>
-            <h1>Historique</h1>
+            <h1 className="page-title">Historique</h1>
           </div>
           <button className="secondary compact" onClick={onClose}>
             Retour au tableau de bord
@@ -1118,9 +1118,7 @@ function AdvisorDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Agenda conseiller</p>
-        <h1 className="agenda-title advisor-dashboard-title">
-          Mon tableau de bord
-        </h1>
+        <h1 className="page-title">Mon tableau de bord</h1>
         <h2 className="advisor-upcoming-title">À venir</h2>
         {schedule.some((slot) => slot.appointment) ? (
           <div className="table-wrap">
@@ -1411,7 +1409,7 @@ function AdminDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Administration</p>
-        <h1>Pilotage du service</h1>
+        <h1 className="page-title">Pilotage du service</h1>
         {error && (
           <div className="error" role="alert">
             {error}
@@ -1624,7 +1622,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
         <div className="sheet-heading">
           <div>
             <p className="eyebrow">Pilotage</p>
-            <h1>Statistiques des entretiens</h1>
+            <h1 className="page-title">Statistiques des entretiens</h1>
           </div>
           <button className="secondary compact" onClick={onClose}>
             Retour au tableau de bord
