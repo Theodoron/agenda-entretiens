@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type DatePickerProps = {
   label: string;
@@ -20,7 +20,9 @@ export function DatePicker({
   onChange,
 }: DatePickerProps) {
   const initialDate = value ? new Date(`${value}T12:00:00`) : new Date();
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [draftValue, setDraftValue] = useState(value);
   const [visibleMonth, setVisibleMonth] = useState(
     new Date(initialDate.getFullYear(), initialDate.getMonth(), 1),
   );
@@ -42,13 +44,44 @@ export function DatePicker({
       )
     : "jj/mm/aaaa";
 
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (!pickerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  function toggle() {
+    if (!open) {
+      setDraftValue(value);
+      const source = value ? new Date(`${value}T12:00:00`) : new Date();
+      setVisibleMonth(new Date(source.getFullYear(), source.getMonth(), 1));
+    }
+    setOpen((current) => !current);
+  }
+
+  function confirm() {
+    if (!draftValue) return;
+    onChange(draftValue);
+    setOpen(false);
+  }
+
   return (
-    <div className="date-time-field repeat-date-picker">
+    <div className="date-time-field repeat-date-picker" ref={pickerRef}>
       <span className="date-time-label">{label}</span>
       <button
         aria-expanded={open}
         className="date-time-trigger"
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggle}
         type="button"
       >
         <span>{displayedValue}</span>
@@ -61,6 +94,14 @@ export function DatePicker({
           aria-label={`Sélectionner : ${label}`}
           className="date-time-popover"
         >
+          <button
+            aria-label={`Fermer sans modifier ${label.toLocaleLowerCase("fr-FR")}`}
+            className="picker-dismiss"
+            onClick={() => setOpen(false)}
+            type="button"
+          >
+            ×
+          </button>
           <div className="calendar-heading">
             <button
               aria-label="Mois précédent"
@@ -114,11 +155,11 @@ export function DatePicker({
               const disabled = Boolean(min && date < min);
               return (
                 <button
-                  aria-selected={date === value}
-                  className={date === value ? "selected" : ""}
+                  aria-selected={date === draftValue}
+                  className={date === draftValue ? "selected" : ""}
                   disabled={disabled}
                   key={date}
-                  onClick={() => onChange(date)}
+                  onClick={() => setDraftValue(date)}
                   role="gridcell"
                   type="button"
                 >
@@ -129,8 +170,8 @@ export function DatePicker({
           </div>
           <button
             className="calendar-close"
-            disabled={!value}
-            onClick={() => setOpen(false)}
+            disabled={!draftValue}
+            onClick={confirm}
             type="button"
           >
             Valider

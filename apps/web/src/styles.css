@@ -62,7 +62,7 @@
   background: linear-gradient(to bottom, #faf7fd, #fff);
   border: 1px solid #e6deed;
   border-radius: 14px;
-  padding: 1rem;
+  padding: 2.5rem 1rem 1rem;
   overflow: visible;
 }
 .chart-labels {
@@ -833,6 +833,25 @@ textarea {
   background: #fff;
   box-shadow: 0 16px 42px rgba(49, 24, 91, 0.18);
   transform: translateX(-50%);
+}
+.picker-dismiss {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 1;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: #675d70;
+  font: 400 1.45rem/1 Arial, sans-serif;
+}
+.picker-dismiss:hover {
+  border-color: #ded2e9;
+  background: #f5f0fa;
+  color: #4e2a84;
 }
 .calendar-heading {
   display: grid;

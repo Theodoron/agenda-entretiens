@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TimePickerProps = {
   label: string;
@@ -20,11 +20,28 @@ export function TimePicker({
   min,
   onChange,
 }: TimePickerProps) {
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [draftHour, setDraftHour] = useState(defaultTime.slice(0, 2));
   const [draftMinute, setDraftMinute] = useState(defaultTime.slice(3, 5));
   const draftValue = `${draftHour}:${draftMinute}`;
   const invalid = Boolean(min && draftValue <= min);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (!pickerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
 
   function toggle() {
     if (!open) {
@@ -42,7 +59,7 @@ export function TimePicker({
   }
 
   return (
-    <div className="date-time-field time-picker">
+    <div className="date-time-field time-picker" ref={pickerRef}>
       <span className="date-time-label">{label}</span>
       <button
         aria-expanded={open}
@@ -60,6 +77,14 @@ export function TimePicker({
           aria-label={`Sélectionner : ${label}`}
           className="date-time-popover time-picker-popover"
         >
+          <button
+            aria-label={`Fermer sans modifier ${label.toLocaleLowerCase("fr-FR")}`}
+            className="picker-dismiss"
+            onClick={() => setOpen(false)}
+            type="button"
+          >
+            ×
+          </button>
           <strong>Choisir l’horaire</strong>
           <div className="time-selectors">
             <label>
