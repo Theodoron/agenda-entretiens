@@ -1795,7 +1795,10 @@ function App() {
           <section className="login" aria-labelledby="login-title">
             <div>
               <p className="eyebrow">Bienvenue</p>
-              <h1 id="login-title">Mobiliser un entretien individuel</h1>
+              <h1 id="login-title">
+                <span>Mobiliser un</span>
+                <span>entretien individuel</span>
+              </h1>
               <p className="lead">
                 Réserver un créneau pour un entretien avec un(e) chargé(e)
                 d’orientation et d’insertion professionnelle.

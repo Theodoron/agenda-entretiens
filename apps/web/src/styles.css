@@ -655,7 +655,16 @@ h1 {
   margin: 0.5rem 0;
 }
 .login #login-title {
-  font-size: clamp(2rem, 4.2vw, 3.8rem);
+  font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+}
+.login #login-title span {
+  display: block;
+  color: #4e2a84;
+  white-space: nowrap;
+}
+.login #login-title span + span {
+  color: #9b83bd;
+  font-style: italic;
 }
 form,
 .notice {
