@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { slotsInRange, weeklySlots } from '../src/availabilities';
+import { slotsAcrossRanges, slotsInRange, weeklySlots } from '../src/availabilities';
 
 describe('séries de disponibilités', () => {
   it('crée le nombre demandé de créneaux espacés de sept jours', () => {
@@ -13,4 +13,15 @@ describe('séries de disponibilités', () => {
 describe('créneaux dans une plage', () => {
   it('produit quatre rendez-vous d’une heure entre 8 h et 12 h', () => expect(slotsInRange(new Date('2026-09-02T08:00:00Z'), new Date('2026-09-02T12:00:00Z'), 60)).toHaveLength(4));
   it('produit trois rendez-vous de 45 minutes entre 14 h et 16 h 15', () => expect(slotsInRange(new Date('2026-09-03T14:00:00Z'), new Date('2026-09-03T16:15:00Z'), 45)).toHaveLength(3));
+  it('reproduit la même plage sur les autres dates choisies', () => {
+    const slots = slotsAcrossRanges(
+      new Date('2026-09-01T08:00:00Z'),
+      new Date('2026-09-01T12:00:00Z'),
+      [new Date('2026-09-08T08:00:00Z'), new Date('2026-09-22T08:00:00Z')],
+      60,
+    );
+    expect(slots).toHaveLength(12);
+    expect(slots[4]?.startsAt.toISOString()).toBe('2026-09-08T08:00:00.000Z');
+    expect(slots[8]?.startsAt.toISOString()).toBe('2026-09-22T08:00:00.000Z');
+  });
 });

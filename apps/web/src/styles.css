@@ -716,10 +716,60 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
+.repeat-dates {
+  margin: 1.4rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid #ded2e9;
+  border-radius: 14px;
+  background: #faf7fd;
+}
+.repeat-dates legend {
+  padding: 0 0.35rem;
+  color: #4e2a84;
+  font-weight: 700;
+}
+.repeat-dates .hint {
+  margin: 0.2rem 0 0.5rem;
+}
+.repeat-date-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.8rem;
+}
+.repeat-date-controls label {
+  flex: 1;
+  margin: 0.5rem 0 0;
+}
+.repeat-date-controls button {
+  margin-bottom: 0;
+}
+.repeat-date-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.repeat-date-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  background: #fff;
+}
 @media (max-width: 760px) {
   .date-time-row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+  .repeat-date-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .repeat-date-controls button {
+    width: 100%;
   }
 }
 .date-time-label {

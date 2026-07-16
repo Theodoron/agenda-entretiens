@@ -66,6 +66,28 @@ const formatDate = (value: string) =>
         : part.value,
     )
     .join("");
+const localDateValue = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const formatCalendarDate = (value: string) =>
+  capitalizeDatePart(
+    new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(
+      new Date(`${value}T12:00:00`),
+    ),
+  );
+const sameTimeOnDate = (dateValue: string, referenceValue: string) => {
+  const dateParts = dateValue.split("-");
+  const year = Number(dateParts[0]);
+  const month = Number(dateParts[1]);
+  const day = Number(dateParts[2]);
+  const reference = new Date(referenceValue);
+  return new Date(
+    year,
+    month - 1,
+    day,
+    reference.getHours(),
+    reference.getMinutes(),
+  ).toISOString();
+};
 const active = (status: string) => ["BOOKED", "CONFIRMED"].includes(status);
 const isUpcomingAppointment = (appointment: Appointment, now = new Date()) =>
   active(appointment.status) &&
@@ -1054,6 +1076,8 @@ function AdvisorDashboard() {
     [duration, setDuration] = useState(45),
     [mode, setMode] = useState("IN_PERSON"),
     [videoUrl, setVideoUrl] = useState(""),
+    [repeatDate, setRepeatDate] = useState(""),
+    [additionalDates, setAdditionalDates] = useState<string[]>([]),
     [notice, setNotice] = useState(""),
     [sheetId, setSheetId] = useState(""),
     [cancellingId, setCancellingId] = useState("");
@@ -1062,6 +1086,37 @@ function AdvisorDashboard() {
   useEffect(() => {
     reload();
   }, []);
+  function addRepeatDate() {
+    setNotice("");
+    if (!startsAt) {
+      setNotice("Sélectionnez d’abord le début de la plage.");
+      return;
+    }
+    if (!repeatDate) {
+      setNotice("Choisissez une date supplémentaire.");
+      return;
+    }
+    const referenceDate = startsAt.slice(0, 10);
+    const referenceDay = new Date(`${referenceDate}T12:00:00`).getDay();
+    const selectedDay = new Date(`${repeatDate}T12:00:00`).getDay();
+    if (selectedDay !== referenceDay) {
+      const weekday = new Intl.DateTimeFormat("fr-FR", {
+        weekday: "long",
+      }).format(new Date(`${referenceDate}T12:00:00`));
+      setNotice(`Choisissez un autre ${weekday}.`);
+      return;
+    }
+    if (repeatDate === referenceDate || additionalDates.includes(repeatDate)) {
+      setNotice("Cette date est déjà comprise dans la plage.");
+      return;
+    }
+    if (new Date(sameTimeOnDate(repeatDate, startsAt)) <= new Date()) {
+      setNotice("La date supplémentaire doit être dans le futur.");
+      return;
+    }
+    setAdditionalDates((current) => [...current, repeatDate].sort());
+    setRepeatDate("");
+  }
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setNotice("");
@@ -1076,16 +1131,24 @@ function AdvisorDashboard() {
         mode,
         ...(videoUrl ? { videoUrl } : {}),
         endsAt: new Date(endsAt).toISOString(),
+        additionalStartsAt: additionalDates.map((date) =>
+          sameTimeOnDate(date, startsAt),
+        ),
       };
-      const result = await api<{ count: number }>("/availabilities/batch", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+      const result = await api<{ count: number; rangeCount: number }>(
+        "/availabilities/batch",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        },
+      );
       setNotice(
-        `${result.count} créneau${result.count > 1 ? "x" : ""} publié${result.count > 1 ? "s" : ""}.`,
+        `${result.count} créneau${result.count > 1 ? "x" : ""} publié${result.count > 1 ? "s" : ""} sur ${result.rangeCount} date${result.rangeCount > 1 ? "s" : ""}.`,
       );
       setStartsAt("");
       setEndsAt("");
+      setRepeatDate("");
+      setAdditionalDates([]);
       await reload();
     } catch (value) {
       setNotice((value as Error).message);
@@ -1291,6 +1354,52 @@ function AdvisorDashboard() {
               value={endsAt}
             />
           </div>
+          <fieldset className="repeat-dates">
+            <legend>Reproduire cette plage à d’autres dates</legend>
+            <p className="hint">
+              Facultatif : choisissez les autres jours identiques auxquels vous
+              souhaitez proposer exactement la même plage d’entretiens.
+            </p>
+            <div className="repeat-date-controls">
+              <label>
+                Date supplémentaire
+                <input
+                  min={localDateValue(new Date())}
+                  onChange={(event) => setRepeatDate(event.target.value)}
+                  type="date"
+                  value={repeatDate}
+                />
+              </label>
+              <button
+                className="secondary compact"
+                onClick={addRepeatDate}
+                type="button"
+              >
+                Ajouter cette date
+              </button>
+            </div>
+            {additionalDates.length > 0 && (
+              <ul className="repeat-date-list">
+                {additionalDates.map((date) => (
+                  <li key={date}>
+                    <span>{formatCalendarDate(date)}</span>
+                    <button
+                      aria-label={`Retirer le ${formatCalendarDate(date)}`}
+                      className="secondary compact"
+                      onClick={() =>
+                        setAdditionalDates((current) =>
+                          current.filter((item) => item !== date),
+                        )
+                      }
+                      type="button"
+                    >
+                      Retirer
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </fieldset>
           <label>
             Durée de chaque entretien
             <select

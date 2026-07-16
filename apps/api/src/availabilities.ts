@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Injectable, Param, Post, Query, Req } from '@nestjs/common';
 import { AppointmentMode } from '@prisma/client';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsUUID, IsUrl, Max, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsDateString, IsEnum, IsInt, IsOptional, IsUUID, IsUrl, Max, Min } from 'class-validator';
 import type { Request } from 'express';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
@@ -21,6 +21,7 @@ class CreateSeriesDto extends CreateAvailabilityDto {
 class CreateBatchDto {
   @IsDateString() startsAt!: string;
   @IsDateString() endsAt!: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(52) @ArrayUnique() @IsDateString({}, { each: true }) additionalStartsAt?: string[];
   @IsInt() @Min(15) @Max(240) durationMinutes!: number;
   @IsEnum(AppointmentMode) mode!: AppointmentMode;
   @IsOptional() @IsUUID() locationId?: string;
@@ -41,6 +42,13 @@ export function slotsInRange(first: Date, rangeEnd: Date, durationMinutes: numbe
   const step = (durationMinutes + bufferMinutes) * 60_000;
   for (let startsAt = first.getTime(); startsAt + duration <= rangeEnd.getTime(); startsAt += step) slots.push({ startsAt: new Date(startsAt), endsAt: new Date(startsAt + duration) });
   return slots;
+}
+
+export function slotsAcrossRanges(first: Date, rangeEnd: Date, additionalStarts: Date[], durationMinutes: number, bufferMinutes = 0) {
+  const rangeDuration = rangeEnd.getTime() - first.getTime();
+  return [first, ...additionalStarts].flatMap(rangeStart =>
+    slotsInRange(rangeStart, new Date(rangeStart.getTime() + rangeDuration), durationMinutes, bufferMinutes),
+  );
 }
 
 @Injectable()
@@ -87,12 +95,24 @@ export class AvailabilitiesService {
     const startsAt = new Date(dto.startsAt), rangeEnd = new Date(dto.endsAt);
     if (startsAt <= new Date() || rangeEnd <= startsAt) throw new BadRequestException('La plage horaire est invalide');
     if (dto.mode === 'VIDEO' && !dto.videoUrl) throw new BadRequestException('Un lien est requis pour la visioconférence');
-    const slots = slotsInRange(startsAt, rangeEnd, dto.durationMinutes, dto.bufferMinutes ?? 0);
+    const additionalStarts = [...new Set(dto.additionalStartsAt ?? [])]
+      .map(value => new Date(value))
+      .filter(value => value.getTime() !== startsAt.getTime())
+      .sort((left, right) => left.getTime() - right.getTime());
+    if (additionalStarts.some(value => value <= new Date())) throw new BadRequestException('Toutes les dates choisies doivent être dans le futur');
+    const rangeDuration = rangeEnd.getTime() - startsAt.getTime();
+    const ranges = [startsAt, ...additionalStarts]
+      .map(rangeStart => ({ startsAt: rangeStart, endsAt: new Date(rangeStart.getTime() + rangeDuration) }))
+      .sort((left, right) => left.startsAt.getTime() - right.startsAt.getTime());
+    if (ranges.some((range, index) => index > 0 && range.startsAt < ranges[index - 1]!.endsAt)) {
+      throw new BadRequestException('Deux plages choisies se chevauchent');
+    }
+    const slots = slotsAcrossRanges(startsAt, rangeEnd, additionalStarts, dto.durationMinutes, dto.bufferMinutes ?? 0);
     if (!slots.length) throw new BadRequestException('La plage est trop courte pour cette durée');
     const conflict = await this.prisma.availability.findFirst({ where: { advisorId: userId, status: { in: ['AVAILABLE', 'HELD', 'BOOKED'] }, OR: slots.map(slot => ({ startsAt: { lt: slot.endsAt }, endsAt: { gt: slot.startsAt } })) } });
     if (conflict) throw new ConflictException('Cette plage chevauche des créneaux existants');
     await this.prisma.availability.createMany({ data: slots.map(slot => ({ ...slot, advisorId: userId, mode: dto.mode, locationId: dto.locationId ?? null, videoUrl: dto.videoUrl ?? null, bufferMinutes: dto.bufferMinutes ?? 0 })) });
-    return { count: slots.length, slots };
+    return { count: slots.length, rangeCount: ranges.length, slots };
   }
   async cancelFree(userId: string, id: string) {
     await requireRole(this.prisma, userId, 'ADVISOR');
