@@ -906,6 +906,7 @@ legend {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  margin: 0;
   padding: 0.5rem 0.85rem;
   cursor: pointer;
 }
