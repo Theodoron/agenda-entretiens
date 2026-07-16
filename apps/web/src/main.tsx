@@ -830,7 +830,7 @@ function StudentDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Mes rendez-vous</p>
-        <h1 className="student-dashboard-title">Mon tableau de bord</h1>
+        <h1 className="student-dashboard-title">Mes entretiens</h1>
         <h2 className="student-upcoming-title">À venir</h2>
         {appointmentTable(upcomingAppointments, "Aucun rendez-vous à venir.")}
       </section>
@@ -1006,7 +1006,7 @@ function AdvisorDashboard() {
     <div className="dashboard">
       <section>
         <p className="eyebrow">Agenda conseiller</p>
-        <h1 className="agenda-title">Mes entretiens</h1>
+        <h1 className="agenda-title">Mon tableau de bord</h1>
         <h2 className="advisor-upcoming-title">À venir</h2>
         {schedule.some((slot) => slot.appointment) ? (
           <div className="table-wrap">
