@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { api } from "./api";
 import { CancellationDialog } from "./components/CancellationDialog";
 import { DatePicker } from "./components/DatePicker";
-import { DateTimePicker } from "./components/DateTimePicker";
 import { ReservationDialog } from "./components/ReservationDialog";
 import "./styles.css";
 
@@ -75,20 +74,8 @@ const formatCalendarDate = (value: string) =>
       new Date(`${value}T12:00:00`),
     ),
   );
-const sameTimeOnDate = (dateValue: string, referenceValue: string) => {
-  const dateParts = dateValue.split("-");
-  const year = Number(dateParts[0]);
-  const month = Number(dateParts[1]);
-  const day = Number(dateParts[2]);
-  const reference = new Date(referenceValue);
-  return new Date(
-    year,
-    month - 1,
-    day,
-    reference.getHours(),
-    reference.getMinutes(),
-  ).toISOString();
-};
+const localDateTimeIso = (dateValue: string, timeValue: string) =>
+  new Date(`${dateValue}T${timeValue}:00`).toISOString();
 const active = (status: string) => ["BOOKED", "CONFIRMED"].includes(status);
 const isUpcomingAppointment = (appointment: Appointment, now = new Date()) =>
   active(appointment.status) &&
@@ -1072,13 +1059,13 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
 
 function AdvisorDashboard() {
   const [schedule, setSchedule] = useState<AdvisorSlot[]>([]),
-    [startsAt, setStartsAt] = useState(""),
-    [endsAt, setEndsAt] = useState(""),
+    [startTime, setStartTime] = useState(""),
+    [endTime, setEndTime] = useState(""),
     [duration, setDuration] = useState(45),
     [mode, setMode] = useState("IN_PERSON"),
     [videoUrl, setVideoUrl] = useState(""),
     [repeatDate, setRepeatDate] = useState(""),
-    [additionalDates, setAdditionalDates] = useState<string[]>([]),
+    [selectedDates, setSelectedDates] = useState<string[]>([]),
     [dateAdded, setDateAdded] = useState(false),
     [notice, setNotice] = useState(""),
     [sheetId, setSheetId] = useState(""),
@@ -1088,35 +1075,29 @@ function AdvisorDashboard() {
   useEffect(() => {
     reload();
   }, []);
-  function addRepeatDate() {
+  function addSelectedDate() {
     setNotice("");
-    if (!startsAt) {
-      setNotice("Sélectionnez d’abord le début de la plage.");
+    if (!startTime || !endTime) {
+      setNotice("Définissez d’abord les heures de début et de fin.");
+      return;
+    }
+    if (endTime <= startTime) {
+      setNotice("L’heure de fin doit être postérieure à l’heure de début.");
       return;
     }
     if (!repeatDate) {
-      setNotice("Choisissez une date supplémentaire.");
+      setNotice("Choisissez une date.");
       return;
     }
-    const referenceDate = startsAt.slice(0, 10);
-    const referenceDay = new Date(`${referenceDate}T12:00:00`).getDay();
-    const selectedDay = new Date(`${repeatDate}T12:00:00`).getDay();
-    if (selectedDay !== referenceDay) {
-      const weekday = new Intl.DateTimeFormat("fr-FR", {
-        weekday: "long",
-      }).format(new Date(`${referenceDate}T12:00:00`));
-      setNotice(`Choisissez un autre ${weekday}.`);
+    if (selectedDates.includes(repeatDate)) {
+      setNotice("Cette date a déjà été ajoutée.");
       return;
     }
-    if (repeatDate === referenceDate || additionalDates.includes(repeatDate)) {
-      setNotice("Cette date est déjà comprise dans la plage.");
+    if (new Date(localDateTimeIso(repeatDate, startTime)) <= new Date()) {
+      setNotice("La plage doit commencer dans le futur.");
       return;
     }
-    if (new Date(sameTimeOnDate(repeatDate, startsAt)) <= new Date()) {
-      setNotice("La date supplémentaire doit être dans le futur.");
-      return;
-    }
-    setAdditionalDates((current) => [...current, repeatDate].sort());
+    setSelectedDates((current) => [...current, repeatDate].sort());
     setRepeatDate("");
     setDateAdded(true);
     window.setTimeout(() => setDateAdded(false), 1800);
@@ -1124,19 +1105,28 @@ function AdvisorDashboard() {
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setNotice("");
-    if (!startsAt || !endsAt) {
-      setNotice("Sélectionnez le début et la fin de la plage.");
+    if (!startTime || !endTime) {
+      setNotice("Définissez les heures de début et de fin.");
+      return;
+    }
+    if (endTime <= startTime) {
+      setNotice("L’heure de fin doit être postérieure à l’heure de début.");
+      return;
+    }
+    if (!selectedDates.length) {
+      setNotice("Ajoutez au moins une date.");
       return;
     }
     try {
+      const [firstDate, ...otherDates] = selectedDates;
       const body = {
-        startsAt: new Date(startsAt).toISOString(),
+        startsAt: localDateTimeIso(firstDate!, startTime),
         durationMinutes: duration,
         mode,
         ...(videoUrl ? { videoUrl } : {}),
-        endsAt: new Date(endsAt).toISOString(),
-        additionalStartsAt: additionalDates.map((date) =>
-          sameTimeOnDate(date, startsAt),
+        endsAt: localDateTimeIso(firstDate!, endTime),
+        additionalStartsAt: otherDates.map((date) =>
+          localDateTimeIso(date, startTime),
         ),
       };
       const result = await api<{ count: number; rangeCount: number }>(
@@ -1149,10 +1139,10 @@ function AdvisorDashboard() {
       setNotice(
         `${result.count} créneau${result.count > 1 ? "x" : ""} publié${result.count > 1 ? "s" : ""} sur ${result.rangeCount} date${result.rangeCount > 1 ? "s" : ""}.`,
       );
-      setStartsAt("");
-      setEndsAt("");
+      setStartTime("");
+      setEndTime("");
       setRepeatDate("");
-      setAdditionalDates([]);
+      setSelectedDates([]);
       await reload();
     } catch (value) {
       setNotice((value as Error).message);
@@ -1342,36 +1332,41 @@ function AdvisorDashboard() {
           </div>
         )}
         <form onSubmit={create}>
-          <div className="date-time-row">
-            <DateTimePicker
-              label="Début de la plage"
-              onChange={(value) => {
-                setStartsAt(value);
-                if (endsAt && endsAt < value) setEndsAt(value);
-              }}
-              value={startsAt}
-            />
-            <DateTimePicker
-              label="Fin de la plage"
-              min={startsAt}
-              onChange={setEndsAt}
-              value={endsAt}
-            />
-          </div>
-          <fieldset className="repeat-dates">
-            <legend>Reproduire cette plage à d’autres dates</legend>
+          <fieldset className="availability-step">
+            <legend>1. Définir la plage horaire</legend>
             <p className="hint">
-              Facultatif : choisissez les autres jours identiques auxquels vous
-              souhaitez proposer exactement la même plage d’entretiens.
+              Ces horaires seront appliqués à toutes les dates sélectionnées.
+            </p>
+            <div className="date-time-row time-range-row">
+              <label>
+                Heure de début
+                <input
+                  onChange={(event) => setStartTime(event.target.value)}
+                  required
+                  type="time"
+                  value={startTime}
+                />
+              </label>
+              <label>
+                Heure de fin
+                <input
+                  min={startTime}
+                  onChange={(event) => setEndTime(event.target.value)}
+                  required
+                  type="time"
+                  value={endTime}
+                />
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="repeat-dates availability-step">
+            <legend>2. Choisir une ou plusieurs dates</legend>
+            <p className="hint">
+              Sélectionnez une date, ajoutez-la, puis recommencez si nécessaire.
             </p>
             <div className="repeat-date-controls">
               <DatePicker
-                allowedWeekday={
-                  startsAt
-                    ? new Date(`${startsAt.slice(0, 10)}T12:00:00`).getDay()
-                    : undefined
-                }
-                label="Date supplémentaire"
+                label="Date de la plage"
                 min={localDateValue(new Date())}
                 onChange={(value) => {
                   setRepeatDate(value);
@@ -1381,22 +1376,22 @@ function AdvisorDashboard() {
               />
               <button
                 className={`secondary compact add-repeat-date${dateAdded ? " confirmed" : ""}`}
-                onClick={addRepeatDate}
+                onClick={addSelectedDate}
                 type="button"
               >
                 {dateAdded ? "Date ajoutée ✓" : "Ajouter cette date"}
               </button>
             </div>
-            {additionalDates.length > 0 && (
+            {selectedDates.length > 0 && (
               <ul className="repeat-date-list">
-                {additionalDates.map((date) => (
+                {selectedDates.map((date) => (
                   <li key={date}>
                     <span>{formatCalendarDate(date)}</span>
                     <button
                       aria-label={`Retirer le ${formatCalendarDate(date)}`}
                       className="secondary compact"
                       onClick={() =>
-                        setAdditionalDates((current) =>
+                        setSelectedDates((current) =>
                           current.filter((item) => item !== date),
                         )
                       }

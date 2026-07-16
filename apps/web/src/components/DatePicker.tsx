@@ -4,7 +4,6 @@ type DatePickerProps = {
   label: string;
   value: string;
   min?: string;
-  allowedWeekday?: number | undefined;
   onChange: (value: string) => void;
 };
 
@@ -18,7 +17,6 @@ export function DatePicker({
   label,
   value,
   min,
-  allowedWeekday,
   onChange,
 }: DatePickerProps) {
   const initialDate = value ? new Date(`${value}T12:00:00`) : new Date();
@@ -113,10 +111,7 @@ export function DatePicker({
                 day,
               );
               const date = localDateValue(dateObject);
-              const disabled =
-                Boolean(min && date < min) ||
-                (allowedWeekday !== undefined &&
-                  dateObject.getDay() !== allowedWeekday);
+              const disabled = Boolean(min && date < min);
               return (
                 <button
                   aria-selected={date === value}

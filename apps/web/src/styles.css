@@ -716,20 +716,25 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
-.repeat-dates {
+.availability-step {
   margin: 1.4rem 0;
   padding: 1rem 1.1rem;
   border: 1px solid #ded2e9;
   border-radius: 14px;
-  background: #faf7fd;
 }
-.repeat-dates legend {
+.availability-step legend {
   padding: 0 0.35rem;
   color: #4e2a84;
   font-weight: 700;
 }
-.repeat-dates .hint {
+.availability-step .hint {
   margin: 0.2rem 0 0.5rem;
+}
+.time-range-row label {
+  margin: 0.5rem 0 0;
+}
+.repeat-dates {
+  background: #faf7fd;
 }
 .repeat-date-controls {
   display: flex;
