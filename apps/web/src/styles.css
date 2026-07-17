@@ -693,17 +693,14 @@ main {
   position: absolute;
   top: 43%;
   left: 34%;
-  z-index: -1;
-  width: min(60vw, 620px);
+  z-index: 0;
+  width: min(65vw, 700px);
   height: auto;
-  color: rgba(255, 255, 255, 0.58);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 11;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 12px 24px rgba(78, 42, 132, 0.055));
-  transform: translate(-50%, -50%) rotate(-7deg);
+  opacity: 0.34;
+  filter: saturate(0.55) contrast(0.92);
+  transform: translate(-50%, -50%);
+  mix-blend-mode: multiply;
+  mask-image: radial-gradient(ellipse 70% 68% at center, #000 50%, transparent 88%);
   pointer-events: none;
 }
 .eyebrow {
@@ -1225,8 +1222,8 @@ footer {
   .login-watermark {
     top: 20%;
     left: 58%;
-    width: min(115vw, 500px);
-    opacity: 0.55;
+    width: min(120vw, 540px);
+    opacity: 0.26;
   }
   main {
     padding-top: 2rem;
