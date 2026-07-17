@@ -696,7 +696,7 @@ main:has(> .login) {
   top: 43%;
   left: 34%;
   z-index: 0;
-  width: min(80vw, 850px);
+  width: min(95vw, 1000px);
   height: auto;
   opacity: 0.22;
   filter: saturate(0.55) contrast(0.92);
@@ -1230,7 +1230,7 @@ footer {
   .login-watermark {
     top: 20%;
     left: 58%;
-    width: min(140vw, 650px);
+    width: min(160vw, 750px);
     opacity: 0.18;
   }
   main {
