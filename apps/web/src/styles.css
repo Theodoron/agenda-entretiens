@@ -694,9 +694,9 @@ main {
   top: 43%;
   left: 34%;
   z-index: 0;
-  width: min(65vw, 700px);
+  width: min(80vw, 850px);
   height: auto;
-  opacity: 0.34;
+  opacity: 0.22;
   filter: saturate(0.55) contrast(0.92);
   transform: translate(-50%, -50%);
   mix-blend-mode: multiply;
@@ -1222,8 +1222,8 @@ footer {
   .login-watermark {
     top: 20%;
     left: 58%;
-    width: min(120vw, 540px);
-    opacity: 0.26;
+    width: min(140vw, 650px);
+    opacity: 0.18;
   }
   main {
     padding-top: 2rem;
