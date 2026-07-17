@@ -699,7 +699,7 @@ main {
   color: rgba(255, 255, 255, 0.58);
   fill: none;
   stroke: currentColor;
-  stroke-width: 8;
+  stroke-width: 11;
   stroke-linecap: round;
   stroke-linejoin: round;
   filter: drop-shadow(0 12px 24px rgba(78, 42, 132, 0.055));
