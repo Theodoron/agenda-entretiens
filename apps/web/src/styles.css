@@ -671,6 +671,13 @@ main {
   padding: clamp(2rem, 7vw, 6rem) clamp(1rem, 4vw, 3rem);
   min-height: calc(100vh - 146px);
 }
+main:has(> .login) {
+  background: radial-gradient(
+    circle at 34% 48%,
+    rgba(107, 71, 159, 0.07),
+    transparent 58%
+  );
+}
 .login {
   position: relative;
   isolation: isolate;
@@ -679,11 +686,6 @@ main {
   gap: clamp(2rem, 8vw, 7rem);
   align-items: center;
   min-height: min(650px, calc(100vh - 220px));
-  background: radial-gradient(
-    circle at 34% 50%,
-    rgba(107, 71, 159, 0.07),
-    transparent 56%
-  );
 }
 .login > :not(.login-watermark) {
   position: relative;
@@ -1217,7 +1219,13 @@ footer {
   .login {
     grid-template-columns: 1fr;
     min-height: auto;
-    background-position: center top;
+  }
+  main:has(> .login) {
+    background: radial-gradient(
+      circle at 58% 22%,
+      rgba(107, 71, 159, 0.07),
+      transparent 60%
+    );
   }
   .login-watermark {
     top: 20%;
