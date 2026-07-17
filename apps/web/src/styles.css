@@ -680,8 +680,8 @@ main {
   align-items: center;
   min-height: min(650px, calc(100vh - 220px));
   background: radial-gradient(
-    circle at 42% 50%,
-    rgba(107, 71, 159, 0.045),
+    circle at 34% 50%,
+    rgba(107, 71, 159, 0.07),
     transparent 56%
   );
 }
@@ -692,7 +692,7 @@ main {
 .login-watermark {
   position: absolute;
   top: 50%;
-  left: 42%;
+  left: 34%;
   z-index: -1;
   width: min(60vw, 620px);
   height: auto;
@@ -1224,7 +1224,7 @@ footer {
   }
   .login-watermark {
     top: 26%;
-    left: 68%;
+    left: 58%;
     width: min(115vw, 500px);
     opacity: 0.55;
   }
