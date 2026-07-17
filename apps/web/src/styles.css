@@ -576,6 +576,10 @@
   margin: 0;
   white-space: pre-wrap;
 }
+.shared-note.advisor-summary {
+  background: #fff5ea;
+  border: 1px solid #f4dfc9;
+}
 .internal {
   margin-top: 1.5rem;
   padding: 1rem;

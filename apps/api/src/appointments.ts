@@ -140,7 +140,7 @@ export class AppointmentsService {
   }
 
   async one(userId: string, id: string) {
-    const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: { include: { location: true } }, request: { include: { reasons: { include: { reason: true }, orderBy: { reason: { sortOrder: 'asc' } } } } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } } } }, history: { orderBy: { createdAt: 'asc' } }, messages: { where: { visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } }, sharedContents: true } });
+    const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: { include: { location: true } }, request: { include: { reasons: { include: { reason: true }, orderBy: { reason: { sortOrder: 'asc' } } } } }, advisor: { include: { user: { select: { firstName: true, lastName: true } } } }, student: { include: { user: { select: { firstName: true, lastName: true } }, component: true, degree: true, academicYear: true } }, history: { orderBy: { createdAt: 'asc' } }, messages: { where: { visibility: 'SHARED' }, orderBy: { createdAt: 'asc' } }, sharedContents: true } });
     if (!appointment) throw new BadRequestException('Rendez-vous introuvable');
     const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
     if (!isAdmin && appointment.studentId !== userId && appointment.advisorId !== userId) throw new BadRequestException('Rendez-vous introuvable');

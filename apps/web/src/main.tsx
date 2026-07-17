@@ -31,6 +31,9 @@ type Appointment = {
   advisor: { user: { firstName: string; lastName: string } };
   student: {
     universityId: string;
+    component?: { name: string } | null;
+    degree?: { name: string } | null;
+    academicYear?: { label: string } | null;
     user: { firstName: string; lastName: string };
   };
   history?: { toStatus: string; reason?: string | null; createdAt: string }[];
@@ -308,6 +311,18 @@ function CommunicationsHub({
                 <dd>{details.student.universityId}</dd>
               </div>
               <div>
+                <dt>Origine</dt>
+                <dd>
+                  {[
+                    details.student.component?.name,
+                    details.student.degree?.name,
+                    details.student.academicYear?.label,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Non renseignée"}
+                </dd>
+              </div>
+              <div>
                 <dt>Objet</dt>
                 <dd>{details.request.subject}</dd>
               </div>
@@ -427,7 +442,10 @@ function CommunicationsHub({
           <h3>Synthèses partagées</h3>
           {summaries.length ? (
             summaries.map((item) => (
-              <article className="shared-note" key={item.id}>
+              <article
+                className={`shared-note${role === "advisor" ? " advisor-summary" : ""}`}
+                key={item.id}
+              >
                 <p>{item.content}</p>
                 {role === "advisor" && item.authorId === details?.advisorId && (
                   <button
