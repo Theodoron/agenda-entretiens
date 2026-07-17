@@ -691,7 +691,7 @@ main {
 }
 .login-watermark {
   position: absolute;
-  top: 50%;
+  top: 43%;
   left: 34%;
   z-index: -1;
   width: min(60vw, 620px);
@@ -1223,7 +1223,7 @@ footer {
     background-position: center top;
   }
   .login-watermark {
-    top: 26%;
+    top: 20%;
     left: 58%;
     width: min(115vw, 500px);
     opacity: 0.55;
