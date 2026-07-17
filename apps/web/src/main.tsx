@@ -311,18 +311,6 @@ function CommunicationsHub({
                 <dd>{details.student.universityId}</dd>
               </div>
               <div>
-                <dt>Origine</dt>
-                <dd>
-                  {[
-                    details.student.component?.name,
-                    details.student.degree?.name,
-                    details.student.academicYear?.label,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || "Non renseignée"}
-                </dd>
-              </div>
-              <div>
                 <dt>Objet</dt>
                 <dd>{details.request.subject}</dd>
               </div>
@@ -339,6 +327,22 @@ function CommunicationsHub({
             <dt>Date et heure</dt>
             <dd>{formatDate(details.availability.startsAt)}</dd>
           </div>
+          {role === "advisor" && (
+            <div className="student-origin-row">
+              <div>
+                <dt>Composante</dt>
+                <dd>{details.student.component?.name || "Non renseignée"}</dd>
+              </div>
+              <div>
+                <dt>Diplôme</dt>
+                <dd>{details.student.degree?.name || "Non renseigné"}</dd>
+              </div>
+              <div>
+                <dt>Année d’études</dt>
+                <dd>{details.student.academicYear?.label || "Non renseignée"}</dd>
+              </div>
+            </div>
+          )}
         </dl>
       )}
       {role === "advisor" && history.length > 0 && (

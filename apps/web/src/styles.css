@@ -287,6 +287,20 @@
   font-weight: 700;
   color: #261b36;
 }
+.sheet-summary .student-origin-row {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  border: 1px solid #e6deed;
+  border-radius: 10px;
+}
+@media (max-width: 760px) {
+  .sheet-summary .student-origin-row {
+    grid-template-columns: 1fr;
+  }
+}
 .free-slot td {
   background: #f4faf6;
 }
