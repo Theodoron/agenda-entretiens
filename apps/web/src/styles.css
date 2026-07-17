@@ -373,6 +373,15 @@
 .sheet-heading h2 {
   margin-bottom: 0;
 }
+.communications .sheet-heading .eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+.communications .sheet-heading h2 {
+  color: #675d70;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
 .sheet-actions {
   display: flex;
   align-items: center;
