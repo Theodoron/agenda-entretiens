@@ -289,17 +289,26 @@
 }
 .sheet-summary .student-origin-row {
   grid-column: 1 / -1;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
   padding: 0.85rem 1rem;
   background: #fff;
   border: 1px solid #e6deed;
   border-radius: 10px;
 }
-@media (max-width: 760px) {
-  .sheet-summary .student-origin-row {
-    grid-template-columns: 1fr;
-  }
+.sheet-summary .student-origin-row > div {
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.sheet-summary .student-origin-row dt {
+  color: #261b36;
+  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.sheet-summary .student-origin-row dt::after {
+  content: " :";
 }
 .free-slot td {
   background: #f4faf6;
