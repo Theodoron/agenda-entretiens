@@ -415,6 +415,21 @@
   width: 100%;
   max-width: none;
 }
+.communications form::after {
+  content: "";
+  display: block;
+  width: 92%;
+  height: 1px;
+  margin: 1.6rem auto 0.15rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #e4daed 18%,
+    #bca8cf 50%,
+    #e4daed 82%,
+    transparent
+  );
+}
 .communications form label,
 .communications form textarea,
 .communications form button {
