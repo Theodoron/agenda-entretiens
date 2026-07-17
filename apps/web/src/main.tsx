@@ -2072,6 +2072,19 @@ function App() {
           )
         ) : (
           <section className="login" aria-labelledby="login-title">
+            <svg
+              className="login-watermark"
+              viewBox="0 0 520 520"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <rect x="70" y="105" width="380" height="330" rx="42" />
+              <path d="M70 190h380" />
+              <path d="M165 75v70M355 75v70" />
+              <path d="M145 245h54M233 245h54M321 245h54" />
+              <path d="M145 305h54M233 305h54M321 305h54" />
+              <path d="M145 365h54M233 365h54M321 365h54" />
+            </svg>
             <div>
               <p className="eyebrow">Bienvenue</p>
               <h1 id="login-title">
