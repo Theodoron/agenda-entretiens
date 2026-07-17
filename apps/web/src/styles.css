@@ -403,7 +403,7 @@
 .communication-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
+  gap: 2.75rem;
 }
 .communications form {
   padding: 0;
@@ -431,10 +431,19 @@
   );
 }
 .communications form label,
-.communications form textarea,
-.communications form button {
+.communications form textarea {
   width: 100%;
   max-width: none;
+}
+.communications form > button {
+  display: block;
+  width: 230px;
+  max-width: 100%;
+  min-height: 42px;
+  margin-left: auto;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.1;
 }
 .thread {
   display: grid;
@@ -480,8 +489,8 @@
   font-size: 0.78rem;
 }
 .documents-panel {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  margin-top: 2.75rem;
+  padding-top: 2.25rem;
   border-top: 1px solid #e6deed;
 }
 .document-list {
@@ -628,7 +637,7 @@
   border: 1px solid #f4dfc9;
 }
 .internal {
-  margin-top: 1.5rem;
+  margin-top: 2.75rem;
   padding: 1rem;
   border: 1px solid #e7dcc8;
   border-radius: 12px;
