@@ -674,7 +674,7 @@ main {
 main:has(> .login) {
   background: radial-gradient(
     circle at 34% 48%,
-    rgba(107, 71, 159, 0.07),
+    rgba(107, 71, 159, 0.085),
     transparent 58%
   );
 }
@@ -1223,7 +1223,7 @@ footer {
   main:has(> .login) {
     background: radial-gradient(
       circle at 58% 22%,
-      rgba(107, 71, 159, 0.07),
+      rgba(107, 71, 159, 0.085),
       transparent 60%
     );
   }
