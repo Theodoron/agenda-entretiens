@@ -1276,12 +1276,18 @@ footer {
   #root > header,
   #root > footer,
   .skip,
-  .dashboard > :not(.communications),
   .communications form,
   .communications .print-actions,
   .communications .no-print,
   .documents-panel button {
     display: none !important;
+  }
+  body:has(.communications) * {
+    visibility: hidden;
+  }
+  body:has(.communications) .communications,
+  body:has(.communications) .communications * {
+    visibility: visible;
   }
   main {
     max-width: none;
@@ -1291,6 +1297,9 @@ footer {
     display: block;
   }
   .communications {
+    position: absolute;
+    top: 0;
+    left: 0;
     display: block !important;
     width: 100%;
     padding: 0;
