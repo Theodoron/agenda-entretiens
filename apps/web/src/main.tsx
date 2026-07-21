@@ -300,7 +300,9 @@ function CommunicationsHub({
         </div>
       </div>
       {details && (
-        <dl className="sheet-summary">
+        <dl
+          className={`sheet-summary appointment-summary${role === "advisor" ? " advisor-sheet-summary" : ""}`}
+        >
           {role === "advisor" ? (
             <>
               <div>
@@ -315,8 +317,11 @@ function CommunicationsHub({
                 <dd>{details.student.universityId}</dd>
               </div>
               <div>
-                <dt>Objet</dt>
-                <dd>{details.request.subject}</dd>
+                <dt>Motif</dt>
+                <dd>
+                  {details.request.reasons.map(({ reason }) => reason.label).join(", ") ||
+                    "Non renseigné"}
+                </dd>
               </div>
             </>
           ) : (

@@ -287,6 +287,18 @@
   font-weight: 700;
   color: #261b36;
 }
+.appointment-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.appointment-summary.advisor-sheet-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.appointment-summary > div {
+  min-width: 0;
+}
+.appointment-summary dd {
+  overflow-wrap: anywhere;
+}
 .request-details {
   margin-top: 1.5rem;
 }
@@ -335,6 +347,12 @@
 }
 .sheet-summary .student-origin-row dt::after {
   content: " :";
+}
+@media (max-width: 760px) {
+  .appointment-summary,
+  .appointment-summary.advisor-sheet-summary {
+    grid-template-columns: 1fr;
+  }
 }
 .free-slot td {
   background: #f4faf6;
