@@ -42,6 +42,44 @@ describe('protection contre les accès horizontaux', () => {
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { advisorId: 'advisor-1', studentId: 'student-1' } }));
   });
 
+  it('archive uniquement les entretiens historiques appartenant au conseiller connecté', async () => {
+    const updateMany = vi.fn().mockResolvedValue({ count: 2 });
+    const prisma = {
+      userRole: { findFirst: vi.fn().mockResolvedValue({ id: 'role-1' }) },
+      $transaction: vi.fn((callback) => callback({ appointment: { updateMany } })),
+    };
+
+    await expect(new AppointmentsService(prisma as never).updateArchive('advisor-1', {
+      ids: ['appointment-1', 'appointment-2'],
+      archived: true,
+    })).resolves.toEqual({ count: 2 });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: { in: ['appointment-1', 'appointment-2'] },
+        advisorId: 'advisor-1',
+        archivedAt: null,
+        OR: expect.any(Array),
+      }),
+      data: expect.objectContaining({ archivedAt: expect.any(Date), archivedById: 'advisor-1' }),
+    });
+  });
+
+  it('refuse un archivage partiel si un entretien ne correspond pas à la sélection autorisée', async () => {
+    const updateMany = vi.fn();
+    const prisma = {
+      userRole: { findFirst: vi.fn().mockResolvedValue({ id: 'role-1' }) },
+      $transaction: vi.fn((callback) => callback({ appointment: { updateMany } })),
+    };
+    updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(new AppointmentsService(prisma as never).updateArchive('advisor-1', {
+      ids: ['appointment-1', 'appointment-2'],
+      archived: true,
+    })).rejects.toBeInstanceOf(BadRequestException);
+    expect(updateMany).toHaveBeenCalledOnce();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+
   it('ne révèle ni messages ni existence d’un entretien à un utilisateur extérieur', async () => {
     const messages = vi.fn();
     const prisma = {

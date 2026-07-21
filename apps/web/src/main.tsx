@@ -26,6 +26,8 @@ type Appointment = {
   studentId: string;
   advisorId: string;
   status: string;
+  archivedAt?: string | null;
+  archivedById?: string | null;
   availability: { startsAt: string; mode: string };
   request: {
     subject: string;
@@ -1010,9 +1012,12 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [sheetId, setSheetId] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
+  const [archiveView, setArchiveView] = useState<"active" | "archived" | "all">("active");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     api<Appointment[]>("/appointments")
@@ -1031,13 +1036,51 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
   const filteredHistoricalAppointments = historicalAppointments.filter((item) => {
     const appointmentDate = localDateValue(new Date(item.availability.startsAt));
     const studentSearchValue = `${item.student.user.lastName} ${item.student.user.firstName} ${item.student.universityId}`.toLocaleLowerCase("fr-FR");
+    const matchesArchiveView =
+      archiveView === "all" ||
+      (archiveView === "archived" ? Boolean(item.archivedAt) : !item.archivedAt);
     return (
+      matchesArchiveView &&
       (!normalizedSearch || studentSearchValue.includes(normalizedSearch)) &&
       (!periodStart || appointmentDate >= periodStart) &&
       (!periodEnd || appointmentDate <= periodEnd)
     );
   });
-  const filtersActive = Boolean(searchTerm || periodStart || periodEnd);
+  const filtersActive = Boolean(searchTerm || periodStart || periodEnd || archiveView !== "active");
+  const visibleIds = filteredHistoricalAppointments.map((item) => item.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+  const selectedAppointments = historicalAppointments.filter((item) =>
+    selectedIds.includes(item.id),
+  );
+  const selectedActiveIds = selectedAppointments
+    .filter((item) => !item.archivedAt)
+    .map((item) => item.id);
+  const selectedArchivedIds = selectedAppointments
+    .filter((item) => item.archivedAt)
+    .map((item) => item.id);
+
+  async function updateArchive(ids: string[], archived: boolean) {
+    if (!ids.length) return;
+    const action = archived ? "archiver" : "restaurer";
+    if (!window.confirm(`${action.charAt(0).toLocaleUpperCase("fr-FR") + action.slice(1)} ${ids.length} entretien${ids.length > 1 ? "s" : ""} ?`)) return;
+    setError("");
+    setNotice("");
+    try {
+      const result = await api<{ count: number }>("/appointments/archive", {
+        method: "PATCH",
+        body: JSON.stringify({ ids, archived }),
+      });
+      const refreshed = await api<Appointment[]>("/appointments");
+      setAppointments(refreshed);
+      setSelectedIds([]);
+      setNotice(
+        `${result.count} entretien${result.count > 1 ? "s" : ""} ${archived ? "archivé" : "restauré"}${result.count > 1 ? "s" : ""}.`,
+      );
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
 
   return (
     <div className="advisor-history-page">
@@ -1059,6 +1102,7 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
             {error}
           </div>
         )}
+        {notice && <div className="success">{notice}</div>}
         {historicalAppointments.length > 0 && (
           <div className="history-filters" aria-label="Filtres de l’historique">
             <label className="history-search">
@@ -1067,7 +1111,10 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                 type="search"
                 placeholder="Nom ou numéro étudiant"
                 value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setSelectedIds([]);
+                }}
               />
             </label>
             <label>
@@ -1076,7 +1123,10 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                 type="date"
                 value={periodStart}
                 max={periodEnd || undefined}
-                onChange={(event) => setPeriodStart(event.target.value)}
+                onChange={(event) => {
+                  setPeriodStart(event.target.value);
+                  setSelectedIds([]);
+                }}
               />
             </label>
             <label>
@@ -1085,8 +1135,25 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                 type="date"
                 value={periodEnd}
                 min={periodStart || undefined}
-                onChange={(event) => setPeriodEnd(event.target.value)}
+                onChange={(event) => {
+                  setPeriodEnd(event.target.value);
+                  setSelectedIds([]);
+                }}
               />
+            </label>
+            <label>
+              Afficher
+              <select
+                value={archiveView}
+                onChange={(event) => {
+                  setArchiveView(event.target.value as "active" | "archived" | "all");
+                  setSelectedIds([]);
+                }}
+              >
+                <option value="active">Entretiens actifs</option>
+                <option value="archived">Entretiens archivés</option>
+                <option value="all">Tous les entretiens</option>
+              </select>
             </label>
             {filtersActive && (
               <button
@@ -1096,6 +1163,8 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                   setSearchTerm("");
                   setPeriodStart("");
                   setPeriodEnd("");
+                  setArchiveView("active");
+                  setSelectedIds([]);
                 }}
               >
                 Effacer les filtres
@@ -1103,11 +1172,56 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
             )}
           </div>
         )}
+        {filteredHistoricalAppointments.length > 0 && (
+          <div className="history-selection-actions">
+            <span>
+              {selectedIds.length
+                ? `${selectedIds.length} entretien${selectedIds.length > 1 ? "s" : ""} sélectionné${selectedIds.length > 1 ? "s" : ""}`
+                : "Sélectionnez les entretiens à traiter"}
+            </span>
+            <div>
+              {archiveView !== "archived" && (
+                <button
+                  className="secondary compact"
+                  disabled={!selectedActiveIds.length}
+                  onClick={() => updateArchive(selectedActiveIds, true)}
+                  type="button"
+                >
+                  Archiver la sélection
+                </button>
+              )}
+              {archiveView !== "active" && (
+                <button
+                  className="compact"
+                  disabled={!selectedArchivedIds.length}
+                  onClick={() => updateArchive(selectedArchivedIds, false)}
+                  type="button"
+                >
+                  Restaurer la sélection
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         {filteredHistoricalAppointments.length ? (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th className="selection-column">
+                    <input
+                      aria-label="Sélectionner tous les entretiens affichés"
+                      checked={allVisibleSelected}
+                      onChange={(event) =>
+                        setSelectedIds((current) =>
+                          event.target.checked
+                            ? Array.from(new Set([...current, ...visibleIds]))
+                            : current.filter((id) => !visibleIds.includes(id)),
+                        )
+                      }
+                      type="checkbox"
+                    />
+                  </th>
                   <th>Nom et prénom</th>
                   <th>Numéro étudiant</th>
                   <th>Date et heure</th>
@@ -1121,6 +1235,20 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
               <tbody>
                 {filteredHistoricalAppointments.map((item) => (
                   <tr key={item.id}>
+                    <td className="selection-column">
+                      <input
+                        aria-label={`Sélectionner l’entretien de ${item.student.user.firstName} ${item.student.user.lastName}`}
+                        checked={selectedIds.includes(item.id)}
+                        onChange={(event) =>
+                          setSelectedIds((current) =>
+                            event.target.checked
+                              ? [...current, item.id]
+                              : current.filter((id) => id !== item.id),
+                          )
+                        }
+                        type="checkbox"
+                      />
+                    </td>
                     <td>
                       {item.student.user.lastName} {item.student.user.firstName}
                     </td>
@@ -1143,6 +1271,7 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                       >
                         {formatStatus(item.status)}
                       </span>
+                      {item.archivedAt && <span className="archived-badge">Archivé</span>}
                     </td>
                     <td className="table-actions">
                       <button

@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Patch, Post, Req } from '@nestjs/common';
 import { AppointmentMode, AppointmentStatus, Prisma } from '@prisma/client';
-import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
@@ -18,6 +18,10 @@ class BookAppointmentDto {
 class ChangeStatusDto {
   @IsEnum(AppointmentStatus) status!: AppointmentStatus;
   @IsOptional() @IsString() @MinLength(3) @MaxLength(500) reason?: string;
+}
+class ArchiveAppointmentsDto {
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ArrayUnique() @IsUUID(undefined, { each: true }) ids!: string[];
+  @IsBoolean() archived!: boolean;
 }
 
 @Injectable()
@@ -151,6 +155,33 @@ export class AppointmentsService {
     await requireRole(this.prisma, userId, 'ADVISOR');
     return this.prisma.appointment.findMany({ where: { advisorId: userId, studentId }, orderBy: { availability: { startsAt: 'asc' } }, include: { availability: true, request: true, history: { orderBy: { createdAt: 'asc' } } }, take: 100 });
   }
+
+  async updateArchive(userId: string, dto: ArchiveAppointmentsDto) {
+    await requireRole(this.prisma, userId, 'ADVISOR');
+    const now = new Date();
+    const archiveState = dto.archived ? { archivedAt: null } : { archivedAt: { not: null } };
+    const where = {
+      id: { in: dto.ids },
+      advisorId: userId,
+      ...archiveState,
+      OR: [
+        { status: { notIn: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] } },
+        { availability: { startsAt: { lt: now } } },
+      ],
+    };
+    return this.prisma.$transaction(async tx => {
+      const result = await tx.appointment.updateMany({
+        where,
+        data: dto.archived
+          ? { archivedAt: now, archivedById: userId }
+          : { archivedAt: null, archivedById: null },
+      });
+      if (result.count !== dto.ids.length) {
+        throw new BadRequestException('La sélection contient un entretien introuvable, à venir ou déjà traité');
+      }
+      return { count: result.count };
+    });
+  }
 }
 
 @Controller('v1/appointments')
@@ -159,6 +190,7 @@ export class AppointmentsController {
   @Post() book(@Req() req: Request, @Body() dto: BookAppointmentDto) { return this.appointments.book(requireUserId(req), dto); }
   @Get() mine(@Req() req: Request) { return this.appointments.mine(requireUserId(req)); }
   @Get('student/:studentId/history') history(@Req() req: Request, @Param('studentId') studentId: string) { return this.appointments.studentHistory(requireUserId(req), studentId); }
+  @Patch('archive') archive(@Req() req: Request, @Body() dto: ArchiveAppointmentsDto) { return this.appointments.updateArchive(requireUserId(req), dto); }
   @Get(':id') one(@Req() req: Request, @Param('id') id: string) { return this.appointments.one(requireUserId(req), id); }
   @Patch(':id/status') changeStatus(@Req() req: Request, @Param('id') id: string, @Body() dto: ChangeStatusDto) { return this.appointments.changeStatus(requireUserId(req), id, dto); }
 }

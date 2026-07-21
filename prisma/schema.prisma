@@ -278,6 +278,8 @@ model Appointment {
   status         AppointmentStatus          @default(CONFIRMED)
   kind           AppointmentKind
   version        Int                        @default(1)
+  archivedAt     DateTime?
+  archivedById   String?                    @db.Uuid
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
   availability   Availability               @relation(fields: [availabilityId], references: [id])
@@ -292,6 +294,7 @@ model Appointment {
 
   @@index([studentId, status])
   @@index([advisorId, status])
+  @@index([advisorId, archivedAt])
 }
 
 model AppointmentStatusHistory {
