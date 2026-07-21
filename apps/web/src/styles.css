@@ -293,6 +293,9 @@
 .request-details h3 {
   margin-bottom: 0;
 }
+.request-summary {
+  grid-template-columns: 1fr;
+}
 .request-summary .request-description {
   grid-column: 1 / -1;
 }
