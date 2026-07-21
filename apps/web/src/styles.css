@@ -377,12 +377,12 @@
 }
 .free-slot-selection-actions input,
 .selection-column input {
-  width: 1rem;
-  height: 1rem;
+  width: 0.85rem;
+  height: 0.85rem;
   accent-color: #4e2a84;
 }
 .selection-column {
-  width: 40px;
+  width: 36px;
   text-align: center !important;
 }
 .selected-free-slot td {
