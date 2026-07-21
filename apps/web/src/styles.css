@@ -475,6 +475,9 @@
     transparent
   );
 }
+.communication-grid form::after {
+  display: none;
+}
 .communications form label,
 .communications form textarea {
   width: 100%;
