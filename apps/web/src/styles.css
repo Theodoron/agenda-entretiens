@@ -297,6 +297,10 @@
   grid-template-columns: 1fr;
 }
 .request-summary dd {
+  padding: 0.75rem 0.85rem;
+  background: #fff;
+  border: 1px solid #e6deed;
+  border-radius: 8px;
   font-weight: 500;
 }
 .request-summary > div + div {
