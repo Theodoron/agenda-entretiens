@@ -296,11 +296,17 @@
 .request-summary {
   grid-template-columns: 1fr;
 }
+.request-summary dd {
+  font-weight: 500;
+}
+.request-summary > div + div {
+  padding-top: 1rem;
+  border-top: 1px solid #e6deed;
+}
 .request-summary .request-description {
   grid-column: 1 / -1;
 }
 .request-summary .request-description dd {
-  font-weight: 500;
   white-space: pre-wrap;
 }
 .sheet-summary .student-origin-row {
