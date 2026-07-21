@@ -1010,6 +1010,9 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [sheetId, setSheetId] = useState("");
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
 
   useEffect(() => {
     api<Appointment[]>("/appointments")
@@ -1024,6 +1027,17 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
         new Date(b.availability.startsAt).getTime() -
         new Date(a.availability.startsAt).getTime(),
     );
+  const normalizedSearch = searchTerm.trim().toLocaleLowerCase("fr-FR");
+  const filteredHistoricalAppointments = historicalAppointments.filter((item) => {
+    const appointmentDate = localDateValue(new Date(item.availability.startsAt));
+    const studentSearchValue = `${item.student.user.lastName} ${item.student.user.firstName} ${item.student.universityId}`.toLocaleLowerCase("fr-FR");
+    return (
+      (!normalizedSearch || studentSearchValue.includes(normalizedSearch)) &&
+      (!periodStart || appointmentDate >= periodStart) &&
+      (!periodEnd || appointmentDate <= periodEnd)
+    );
+  });
+  const filtersActive = Boolean(searchTerm || periodStart || periodEnd);
 
   return (
     <div className="advisor-history-page">
@@ -1045,7 +1059,51 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
             {error}
           </div>
         )}
-        {historicalAppointments.length ? (
+        {historicalAppointments.length > 0 && (
+          <div className="history-filters" aria-label="Filtres de l’historique">
+            <label className="history-search">
+              Rechercher un étudiant
+              <input
+                type="search"
+                placeholder="Nom ou numéro étudiant"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </label>
+            <label>
+              Du
+              <input
+                type="date"
+                value={periodStart}
+                max={periodEnd || undefined}
+                onChange={(event) => setPeriodStart(event.target.value)}
+              />
+            </label>
+            <label>
+              Au
+              <input
+                type="date"
+                value={periodEnd}
+                min={periodStart || undefined}
+                onChange={(event) => setPeriodEnd(event.target.value)}
+              />
+            </label>
+            {filtersActive && (
+              <button
+                className="secondary compact"
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setPeriodStart("");
+                  setPeriodEnd("");
+                }}
+              >
+                Effacer les filtres
+              </button>
+            )}
+          </div>
+        )}
+        {filteredHistoricalAppointments.length ? (
           <div className="table-wrap">
             <table>
               <thead>
@@ -1053,7 +1111,7 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                   <th>Nom et prénom</th>
                   <th>Numéro étudiant</th>
                   <th>Date et heure</th>
-                  <th>Objet</th>
+                  <th>Motif</th>
                   <th>Statut</th>
                   <th>
                     <span className="sr-only">Actions</span>
@@ -1061,7 +1119,7 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                 </tr>
               </thead>
               <tbody>
-                {historicalAppointments.map((item) => (
+                {filteredHistoricalAppointments.map((item) => (
                   <tr key={item.id}>
                     <td>
                       {item.student.user.lastName} {item.student.user.firstName}
@@ -1070,7 +1128,10 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                     <td className="table-date">
                       {formatDate(item.availability.startsAt)}
                     </td>
-                    <td>{item.request.subject}</td>
+                    <td>
+                      {item.request.reasons.map(({ reason }) => reason.label).join(", ") ||
+                        "Non renseigné"}
+                    </td>
                     <td>
                       <span
                         className={[
@@ -1097,7 +1158,11 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
             </table>
           </div>
         ) : (
-          <p className="empty">Aucun entretien dans l’historique.</p>
+          <p className="empty">
+            {historicalAppointments.length
+              ? "Aucun entretien ne correspond aux critères."
+              : "Aucun entretien dans l’historique."}
+          </p>
         )}
       </section>
       {sheetId && (

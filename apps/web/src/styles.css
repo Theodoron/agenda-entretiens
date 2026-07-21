@@ -615,6 +615,33 @@
 .table-wrap tbody tr:last-child td {
   border-bottom: 0;
 }
+.history-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) repeat(2, minmax(155px, 1fr)) auto;
+  align-items: end;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid #e6deed;
+  border-radius: 14px;
+  background: #f8f5fb;
+}
+.history-filters label {
+  margin: 0;
+  font-size: 0.88rem;
+}
+.history-filters button {
+  margin-bottom: 0.1rem;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .history-filters {
+    grid-template-columns: 1fr;
+  }
+  .history-filters button {
+    width: 100%;
+  }
+}
 .table-date {
   font-weight: 700;
 }
