@@ -1249,9 +1249,7 @@ function AdvisorDashboard() {
                   <th>Objet</th>
                   <th>Statut</th>
                   <th>Fréquentation</th>
-                  <th>
-                    <span className="sr-only">Actions</span>
-                  </th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
