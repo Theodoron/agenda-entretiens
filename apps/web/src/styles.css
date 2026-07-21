@@ -287,6 +287,19 @@
   font-weight: 700;
   color: #261b36;
 }
+.request-details {
+  margin-top: 1.5rem;
+}
+.request-details h3 {
+  margin-bottom: 0;
+}
+.request-summary .request-description {
+  grid-column: 1 / -1;
+}
+.request-summary .request-description dd {
+  font-weight: 500;
+  white-space: pre-wrap;
+}
 .sheet-summary .student-origin-row {
   grid-column: 1 / -1;
   grid-template-columns: 1fr;

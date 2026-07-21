@@ -27,7 +27,11 @@ type Appointment = {
   advisorId: string;
   status: string;
   availability: { startsAt: string; mode: string };
-  request: { subject: string };
+  request: {
+    subject: string;
+    description: string;
+    reasons: { reason: { label: string } }[];
+  };
   advisor: { user: { firstName: string; lastName: string } };
   student: {
     universityId: string;
@@ -380,6 +384,28 @@ function CommunicationsHub({
         <div className="error" role="alert">
           {error}
         </div>
+      )}
+      {details && (
+        <section className="request-details">
+          <h3>Demande d’entretien</h3>
+          <dl className="sheet-summary request-summary">
+            <div>
+              <dt>Motif de l’entretien</dt>
+              <dd>
+                {details.request.reasons.map(({ reason }) => reason.label).join(", ") ||
+                  "Non renseigné"}
+              </dd>
+            </div>
+            <div>
+              <dt>Objet</dt>
+              <dd>{details.request.subject || "Non renseigné"}</dd>
+            </div>
+            <div className="request-description">
+              <dt>Description de la demande</dt>
+              <dd>{details.request.description || "Non renseignée"}</dd>
+            </div>
+          </dl>
+        </section>
       )}
       <div className="communication-grid">
         <div>
