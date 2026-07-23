@@ -339,15 +339,16 @@ async function main() {
       await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } }, update: {}, create: { roleId: role.id, permissionId: permission.id } });
     }
   }
-  const passwordHash = await hash('Demo-Agenda-2026!', { memoryCost: 19456, timeCost: 2 });
+  const sharedPasswordHash = await hash('Demo-Agenda-2026!', { memoryCost: 19456, timeCost: 2 });
+  const adminPasswordHash = await hash('Demo-Admin-2026!', { memoryCost: 19456, timeCost: 2 });
   const demos = [
-    ['etudiant@example.test', 'Rayan', 'Cherki', 'STUDENT'],
-    ['conseiller@example.test', 'Didier', 'Deschamps', 'ADVISOR'],
-    ['admin@example.test', 'Alex', 'Robert', 'ADMIN'],
+    ['etudiant@example.test', 'Rayan', 'Cherki', 'STUDENT', sharedPasswordHash],
+    ['conseiller@example.test', 'Didier', 'Deschamps', 'ADVISOR', sharedPasswordHash],
+    ['admin@example.test', 'Alex', 'Robert', 'ADMIN', adminPasswordHash],
   ];
   let advisorId;
   let studentRoleId;
-  for (const [email, firstName, lastName, code] of demos) {
+  for (const [email, firstName, lastName, code, passwordHash] of demos) {
     const notificationEmail = code === 'STUDENT' ? process.env.DEMO_STUDENT_EMAIL?.trim().toLowerCase() || email : email;
     const existingIdentity = await prisma.authIdentity.findUnique({ where: { provider_subject: { provider: 'DEV', subject: email } }, select: { userId: true } });
     const user = existingIdentity
