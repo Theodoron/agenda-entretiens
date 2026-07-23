@@ -2639,7 +2639,12 @@ function App() {
           </section>
         )}
       </main>
-      <footer>Besoin d’aide ? Contactez le service d’orientation.</footer>
+      <footer>
+        <p>Besoin d’aide ? Contactez le service d’orientation.</p>
+        <small>
+          Démonstrateur — conçu, développé et maintenu par T. Varvier.
+        </small>
+      </footer>
     </>
   );
 }

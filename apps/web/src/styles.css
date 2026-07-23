@@ -1630,10 +1630,19 @@ legend {
   accent-color: #4e2a84;
 }
 footer {
+  display: grid;
+  gap: 0.4rem;
   text-align: center;
   padding: 1.5rem;
   background: #352347;
   color: #fff;
+}
+footer p {
+  margin: 0;
+}
+footer small {
+  color: #ded3e8;
+  font-size: 0.78rem;
 }
 @media (max-width: 760px) {
   .reservation-dialog {
