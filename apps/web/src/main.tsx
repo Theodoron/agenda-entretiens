@@ -1938,6 +1938,7 @@ type Statistics = {
     components: StatItem[];
     degrees: StatItem[];
     academicYears: StatItem[];
+    academicYearsByComponent: { component: string; years: StatItem[] }[];
   };
   repeatByComponent: {
     label: string;
@@ -2004,16 +2005,48 @@ const statColors = [
   "#2f9b5f",
   "#b86f9e",
 ];
+const componentDonutDefinitions = [
+  {
+    component: "Faculté de Droit",
+    colors: ["#861f27", "#a8323a", "#c94b53", "#df7278", "#ef9da1"],
+  },
+  {
+    component: "Faculté des Humanités, Lettres et Sociétés",
+    colors: ["#205c3b", "#347b53", "#4f9c6c", "#75b98d", "#a2d2b2"],
+  },
+  {
+    component: "iaelyon School of Management",
+    colors: ["#122b49", "#1f456f", "#34618e", "#577fa7", "#86a3c1"],
+  },
+  {
+    component: "Faculté des Langues",
+    colors: ["#247da0", "#3f9abe", "#65b4d1", "#8bcbe0", "#b6dfeb"],
+  },
+  {
+    component: "Faculté de Philosophie",
+    colors: ["#66651e", "#85832b", "#a3a044", "#c0bb68", "#d9d49a"],
+  },
+  {
+    component: "IUT Jean Moulin",
+    colors: ["#a94d08", "#ce6907", "#eb890b", "#f3aa3f", "#f8cd7a"],
+  },
+];
 const percentageLabel = (value: number) =>
   new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
 function StatDonut({
   items,
   centerLabel = "étudiants",
   valueLabel = "étudiants",
+  colors = statColors,
+  compact = false,
+  showLegend = true,
 }: {
   items: StatItem[];
   centerLabel?: string;
   valueLabel?: string;
+  colors?: string[];
+  compact?: boolean;
+  showLegend?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const total = items.reduce((sum, item) => sum + item.count, 0);
@@ -2029,7 +2062,7 @@ function StatDonut({
       item,
       start,
       percentage,
-      color: statColors[index % statColors.length],
+      color: colors[index % colors.length],
       tooltipX: 50 + Math.cos((angle * Math.PI) / 180) * 38,
       tooltipY: 50 + Math.sin((angle * Math.PI) / 180) * 38,
     };
@@ -2042,7 +2075,7 @@ function StatDonut({
     .join(" ; ");
 
   return (
-    <div className="donut-layout">
+    <div className={compact ? "donut-layout compact" : "donut-layout"}>
       <div className="donut-chart">
         <svg viewBox="0 0 100 100" role="img" aria-label={description}>
           <circle
@@ -2107,24 +2140,26 @@ function StatDonut({
           </div>
         )}
       </div>
-      <ul className="donut-legend">
-        {items.map((item, index) => {
-          const percentage = (item.count / total) * 100;
-          return (
-            <li key={item.label}>
-              <i
-                style={{ backgroundColor: statColors[index % statColors.length] }}
-                aria-hidden="true"
-              />
-              <span>{item.label}</span>
-              <span className="donut-values">
-                <strong>{item.count}</strong>
-                <small>{percentageLabel(percentage)} %</small>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      {showLegend && (
+        <ul className="donut-legend">
+          {items.map((item, index) => {
+            const percentage = (item.count / total) * 100;
+            return (
+              <li key={item.label}>
+                <i
+                  style={{ backgroundColor: colors[index % colors.length] }}
+                  aria-hidden="true"
+                />
+                <span>{item.label}</span>
+                <span className="donut-values">
+                  <strong>{item.count}</strong>
+                  <small>{percentageLabel(percentage)} %</small>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
@@ -2293,6 +2328,28 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               <section>
                 <h3>Composantes</h3>
                 <StatDonut items={data.origins.components} />
+              </section>
+              <section className="component-year-section">
+                <h3>Entretiens par année et composante</h3>
+                <div className="component-year-grid">
+                  {componentDonutDefinitions.map(({ component, colors }) => (
+                    <article className="component-year-card" key={component}>
+                      <StatDonut
+                        items={
+                          data.origins.academicYearsByComponent.find(
+                            (item) => item.component === component,
+                          )?.years ?? []
+                        }
+                        centerLabel="entretiens"
+                        valueLabel="entretiens"
+                        colors={colors}
+                        compact
+                        showLegend={false}
+                      />
+                      <h4>{component}</h4>
+                    </article>
+                  ))}
+                </div>
               </section>
               <section>
                 <h3>Diplômes</h3>
