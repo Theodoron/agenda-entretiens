@@ -946,6 +946,17 @@
 .table-date {
   font-weight: 700;
 }
+.appointment-subject-cell {
+  width: 260px;
+  max-width: 260px;
+}
+.appointment-subject-cell > span {
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .advisor-history-count {
   color: #a34700;
   font-size: inherit;

@@ -865,7 +865,11 @@ function StudentDashboard() {
               <tr key={item.id}>
                 <td className="table-date">{formatDate(item.availability.startsAt)}</td>
                 <td>{item.advisor.user.firstName} {item.advisor.user.lastName}</td>
-                <td>{item.request.description}</td>
+                <td className="appointment-subject-cell">
+                  <span title={item.request.description}>
+                    {item.request.description}
+                  </span>
+                </td>
                 <td>{formatMode(item.availability.mode)}</td>
                 <td>
                   <span className={["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) ? "status cancelled-by-advisor" : "status"}>
@@ -1453,7 +1457,11 @@ function AdvisorDashboard() {
                         </td>
                         <td>{item?.student.universityId ?? "—"}</td>
                         <td className="table-date">{formatDate(slot.startsAt)}</td>
-                        <td>{item?.request.description ?? "Créneau disponible"}</td>
+                        <td className="appointment-subject-cell">
+                          <span title={item?.request.description}>
+                            {item?.request.description ?? "Créneau disponible"}
+                          </span>
+                        </td>
                         <td>
                           <span className="status">
                             {formatStatus(item?.status ?? "AVAILABLE")}
