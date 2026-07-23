@@ -2006,7 +2006,15 @@ const statColors = [
 ];
 const percentageLabel = (value: number) =>
   new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
-function StatDonut({ items }: { items: StatItem[] }) {
+function StatDonut({
+  items,
+  centerLabel = "étudiants",
+  valueLabel = "étudiants",
+}: {
+  items: StatItem[];
+  centerLabel?: string;
+  valueLabel?: string;
+}) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const total = items.reduce((sum, item) => sum + item.count, 0);
   if (!total) return <p className="empty">Aucune donnée.</p>;
@@ -2064,7 +2072,7 @@ function StatDonut({ items }: { items: StatItem[] }) {
               strokeDashoffset={-segment.start}
               transform="rotate(-90 50 50)"
               tabIndex={0}
-              aria-label={`${segment.item.label} : ${segment.item.count} étudiants, ${percentageLabel(segment.percentage)} %`}
+              aria-label={`${segment.item.label} : ${segment.item.count} ${valueLabel}, ${percentageLabel(segment.percentage)} %`}
               onMouseEnter={() => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(null)}
               onFocus={() => setActiveIndex(index)}
@@ -2074,7 +2082,7 @@ function StatDonut({ items }: { items: StatItem[] }) {
         </svg>
         <div className="donut-center" aria-hidden="true">
           <strong>{total}</strong>
-          <span>étudiants</span>
+          <span>{centerLabel}</span>
         </div>
         {activeIndex !== null && (
           <div
@@ -2093,7 +2101,7 @@ function StatDonut({ items }: { items: StatItem[] }) {
               {segments[activeIndex]?.item.label}
             </span>
             <strong>
-              {segments[activeIndex]?.item.count} étudiants ·{" "}
+              {segments[activeIndex]?.item.count} {valueLabel} ·{" "}
               {percentageLabel(segments[activeIndex]?.percentage ?? 0)} %
             </strong>
           </div>
@@ -2336,16 +2344,16 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               />
             </section>
           </div>
-          <StatTable
-            title="Motifs associés à plusieurs entretiens"
-            items={data.repeatReasons}
-          />
           <section className="stat-block reasons-group">
             <h2>Motifs</h2>
             <div className="reason-sections">
               <section>
                 <h3>Motifs des entretiens</h3>
-                <StatBars items={data.reasons} />
+                <StatDonut
+                  items={data.reasons}
+                  centerLabel="sélections"
+                  valueLabel="sélections"
+                />
               </section>
               <section>
                 <h3>Motifs par période</h3>
@@ -2371,6 +2379,10 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
                     </tbody>
                   </table>
                 </div>
+              </section>
+              <section>
+                <h3>Motifs associés à plusieurs entretiens</h3>
+                <StatBars items={data.repeatReasons} />
               </section>
             </div>
           </section>
