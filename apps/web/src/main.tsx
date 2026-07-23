@@ -30,7 +30,6 @@ type Appointment = {
   archivedById?: string | null;
   availability: { startsAt: string; mode: string };
   request: {
-    subject: string;
     description: string;
     reasons: { reason: { label: string } }[];
   };
@@ -54,7 +53,7 @@ type AdvisorSlot = {
     id: string;
     status: string;
     historyCount: number;
-    request: { subject: string };
+    request: { description: string };
     student: {
       universityId: string;
       user: { firstName: string; lastName: string };
@@ -370,7 +369,7 @@ function CommunicationsHub({
                   onClick={() => setCurrentId(item.id)}
                 >
                   {formatDate(item.availability.startsAt)} —{" "}
-                  {item.request.subject}
+                  {item.request.description}
                 </button>
                 {(() => {
                   const cancellations = item.history?.filter((entry) => entry.toStatus.startsWith("CANCELLED")) ?? [];
@@ -403,12 +402,8 @@ function CommunicationsHub({
                   "Non renseigné"}
               </dd>
             </div>
-            <div>
-              <dt>Objet</dt>
-              <dd>{details.request.subject || "Non renseigné"}</dd>
-            </div>
             <div className="request-description">
-              <dt>Description de la demande</dt>
+              <dt>Objet du rendez-vous</dt>
               <dd>{details.request.description || "Non renseignée"}</dd>
             </div>
           </dl>
@@ -769,7 +764,6 @@ function StudentDashboard() {
   const [selected, setSelected] = useState(""),
     [advisorFilter, setAdvisorFilter] = useState(""),
     [reasonIds, setReasonIds] = useState<string[]>([]),
-    [subject, setSubject] = useState(""),
     [description, setDescription] = useState("");
   const [message, setMessage] = useState(""),
     [error, setError] = useState(""),
@@ -804,14 +798,12 @@ function StudentDashboard() {
         body: JSON.stringify({
           availabilityId: selected,
           reasonIds,
-          subject,
           description,
         }),
       });
       setMessage("Votre rendez-vous est réservé.");
       setSelected("");
       setReasonIds([]);
-      setSubject("");
       setDescription("");
       await reload();
       return true;
@@ -862,7 +854,7 @@ function StudentDashboard() {
             <tr>
               <th>Date et heure</th>
               <th>Conseiller</th>
-              <th>Objet</th>
+              <th>Objet du rendez-vous</th>
               <th>Modalité</th>
               <th>Statut</th>
               <th><span className="sr-only">Actions</span></th>
@@ -873,7 +865,7 @@ function StudentDashboard() {
               <tr key={item.id}>
                 <td className="table-date">{formatDate(item.availability.startsAt)}</td>
                 <td>{item.advisor.user.firstName} {item.advisor.user.lastName}</td>
-                <td>{item.request.subject}</td>
+                <td>{item.request.description}</td>
                 <td>{formatMode(item.availability.mode)}</td>
                 <td>
                   <span className={["CANCELLED_BY_ADVISOR", "CANCELLED_BY_ADMIN"].includes(item.status) ? "status cancelled-by-advisor" : "status"}>
@@ -929,12 +921,10 @@ function StudentDashboard() {
           onClose={() => setSelected("")}
           onDescriptionChange={setDescription}
           onReasonIdsChange={setReasonIds}
-          onSubjectChange={setSubject}
           onSubmit={book}
           reasonIds={reasonIds}
           reasons={reasons}
           slot={selectedSlot}
-          subject={subject}
         />
       )}
       <section>
@@ -1440,7 +1430,7 @@ function AdvisorDashboard() {
                   <th>Nom et prénom</th>
                   <th>Numéro étudiant</th>
                   <th>Date et heure</th>
-                  <th>Objet</th>
+                  <th>Objet du rendez-vous</th>
                   <th>Statut</th>
                   <th>Fréquentation</th>
                   <th>Actions</th>
@@ -1463,7 +1453,7 @@ function AdvisorDashboard() {
                         </td>
                         <td>{item?.student.universityId ?? "—"}</td>
                         <td className="table-date">{formatDate(slot.startsAt)}</td>
-                        <td>{item?.request.subject ?? "Créneau disponible"}</td>
+                        <td>{item?.request.description ?? "Créneau disponible"}</td>
                         <td>
                           <span className="status">
                             {formatStatus(item?.status ?? "AVAILABLE")}

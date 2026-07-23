@@ -184,7 +184,7 @@ export class CalendarService {
         const description = [
           `Étudiant : ${studentName}`,
           `Numéro étudiant : ${appointment.student.universityId}`,
-          `Objet : ${appointment.request.subject}`,
+          `Objet du rendez-vous : ${appointment.request.description}`,
           `Motif(s) : ${reasonLabels(appointment.request)}`,
           `Modalité : ${modeLabel(slot.mode)}`,
         ];
@@ -236,7 +236,7 @@ export class CalendarService {
       const advisorName = `${appointment.advisor.user.firstName} ${appointment.advisor.user.lastName}`;
       const description = [
         `Conseiller : ${advisorName}`,
-        `Objet : ${appointment.request.subject}`,
+        `Objet du rendez-vous : ${appointment.request.description}`,
         `Motif(s) : ${reasonLabels(appointment.request)}`,
         `Modalité : ${modeLabel(appointment.availability.mode)}`,
       ];

@@ -6,7 +6,6 @@ type ReservationDialogProps = {
   onClose: () => void;
   onDescriptionChange: (value: string) => void;
   onReasonIdsChange: (value: string[]) => void;
-  onSubjectChange: (value: string) => void;
   onSubmit: () => Promise<boolean>;
   reasonIds: string[];
   reasons: { id: string; label: string }[];
@@ -15,7 +14,6 @@ type ReservationDialogProps = {
     mode: string;
     advisor: { user: { firstName: string; lastName: string } };
   };
-  subject: string;
   formatDate: (value: string) => string;
   formatMode: (value: string) => string;
 };
@@ -28,12 +26,10 @@ export function ReservationDialog({
   onClose,
   onDescriptionChange,
   onReasonIdsChange,
-  onSubjectChange,
   onSubmit,
   reasonIds,
   reasons,
   slot,
-  subject,
 }: ReservationDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
@@ -148,11 +144,7 @@ export function ReservationDialog({
               </div>
             </fieldset>
             <label>
-              Objet
-              <input maxLength={160} minLength={3} onChange={(event) => onSubjectChange(event.target.value)} required value={subject} />
-            </label>
-            <label>
-              Décrivez votre demande
+              Objet du rendez-vous
               <textarea maxLength={4000} minLength={10} onChange={(event) => onDescriptionChange(event.target.value)} required value={description} />
             </label>
             <div className="dialog-actions">

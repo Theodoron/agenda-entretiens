@@ -10,7 +10,6 @@ import { canStudentAccessAppointment, canStudentCancel, canTransition, isCancell
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(7) @ArrayUnique() @IsUUID(undefined, { each: true }) reasonIds!: string[];
-  @IsString() @MinLength(3) @MaxLength(160) subject!: string;
   @IsString() @MinLength(10) @MaxLength(4000) description!: string;
   @IsOptional() @IsEnum(AppointmentMode) preferredMode?: AppointmentMode;
   @IsOptional() @IsString() @MaxLength(1000) accessibilityNeeds?: string;
@@ -73,7 +72,7 @@ export class AppointmentsService {
         if (claimed.count !== 1) throw new ConflictException('Ce créneau vient d’être réservé');
         const previous = await tx.appointment.findFirst({ where: { studentId, status: 'COMPLETED' }, orderBy: { createdAt: 'desc' } });
         const kind = !previous ? 'FIRST_WITH_SERVICE' : previous.advisorId === slot.advisorId ? 'FOLLOW_UP_SAME_ADVISOR' : 'SEEN_OTHER_ADVISOR';
-        const request = await tx.interviewRequest.create({ data: { studentId, subject: dto.subject, description: dto.description, preferredMode: dto.preferredMode ?? null, accessibilityNeeds: dto.accessibilityNeeds ?? null, reasons: { create: dto.reasonIds.map(reasonId => ({ reasonId })) } } });
+        const request = await tx.interviewRequest.create({ data: { studentId, subject: dto.description, description: dto.description, preferredMode: dto.preferredMode ?? null, accessibilityNeeds: dto.accessibilityNeeds ?? null, reasons: { create: dto.reasonIds.map(reasonId => ({ reasonId })) } } });
         const appointment = await tx.appointment.create({ data: { availabilityId: slot.id, requestId: request.id, studentId, advisorId: slot.advisorId, kind, status: 'CONFIRMED' } });
         await tx.appointmentStatusHistory.create({ data: { appointmentId: appointment.id, toStatus: 'CONFIRMED', actorId: studentId } });
         await tx.outboxEvent.create({ data: { aggregateType: 'Appointment', aggregateId: appointment.id, type: 'appointment.booked', payload: { appointmentId: appointment.id, studentId, advisorId: slot.advisorId } } });

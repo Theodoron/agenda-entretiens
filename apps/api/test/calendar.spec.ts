@@ -18,13 +18,13 @@ describe('abonnement calendrier', () => {
       startsAt: new Date('2026-07-20T08:00:00.000Z'),
       endsAt: new Date('2026-07-20T08:45:00.000Z'),
       summary: 'Entretien, orientation',
-      description: ['Objet : projet; mobilité'],
+      description: ['Objet du rendez-vous : projet; mobilité'],
       sequence: 1,
     }], new Date('2026-07-14T12:00:00.000Z'));
     expect(escapeIcsText('a,b;c\nd')).toBe('a\\,b\\;c\\nd');
     expect(calendar).toContain('BEGIN:VCALENDAR\r\n');
     expect(calendar).toContain('SUMMARY:Entretien\\, orientation');
-    expect(calendar).toContain('DESCRIPTION:Objet : projet\\; mobilité');
+    expect(calendar).toContain('DESCRIPTION:Objet du rendez-vous : projet\\; mobilité');
     expect(calendar).toContain('DTSTART:20260720T080000Z');
     expect(calendar.endsWith('END:VCALENDAR\r\n')).toBe(true);
   });
@@ -56,7 +56,7 @@ describe('abonnement calendrier', () => {
         version: 1,
         updatedAt: new Date('2026-07-14T12:00:00.000Z'),
         request: {
-          subject: 'Mon projet',
+          description: 'Mon projet',
           reasons: [
             { reason: { label: 'Orientation-réorientation' } },
             { reason: { label: 'Projet professionnel, débouchés' } },
