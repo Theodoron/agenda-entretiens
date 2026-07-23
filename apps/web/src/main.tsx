@@ -1992,6 +1992,71 @@ function StatBars({
     <p className="empty">Aucune donnée.</p>
   );
 }
+const statColors = [
+  "#4e2a84",
+  "#d45b87",
+  "#e88d32",
+  "#238b82",
+  "#3977a8",
+  "#8d6ab8",
+  "#6f9138",
+  "#c65348",
+  "#2f9b5f",
+  "#b86f9e",
+];
+const percentageLabel = (value: number) =>
+  new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
+function StatDonut({ items }: { items: StatItem[] }) {
+  const total = items.reduce((sum, item) => sum + item.count, 0);
+  if (!total) return <p className="empty">Aucune donnée.</p>;
+
+  let offset = 0;
+  const segments = items.map((item, index) => {
+    const start = offset;
+    offset += (item.count / total) * 100;
+    return `${statColors[index % statColors.length]} ${start}% ${offset}%`;
+  });
+  const description = items
+    .map(
+      (item) =>
+        `${item.label} : ${item.count}, ${percentageLabel((item.count / total) * 100)} %`,
+    )
+    .join(" ; ");
+
+  return (
+    <div className="donut-layout">
+      <div
+        className="donut-chart"
+        style={{ background: `conic-gradient(${segments.join(", ")})` }}
+        role="img"
+        aria-label={description}
+      >
+        <div className="donut-center" aria-hidden="true">
+          <strong>{total}</strong>
+          <span>étudiants</span>
+        </div>
+      </div>
+      <ul className="donut-legend">
+        {items.map((item, index) => {
+          const percentage = (item.count / total) * 100;
+          return (
+            <li key={item.label}>
+              <i
+                style={{ backgroundColor: statColors[index % statColors.length] }}
+                aria-hidden="true"
+              />
+              <span>{item.label}</span>
+              <span className="donut-values">
+                <strong>{item.count}</strong>
+                <small>{percentageLabel(percentage)} %</small>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 function StatTable({
   title,
   items,
@@ -2093,7 +2158,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             <div className="origin-sections">
               <section>
                 <h3>Composantes</h3>
-                <StatBars items={data.origins.components} />
+                <StatDonut items={data.origins.components} />
               </section>
               <section>
                 <h3>Diplômes</h3>
@@ -2101,7 +2166,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               </section>
               <section>
                 <h3>Année d’études</h3>
-                <StatBars items={data.origins.academicYears} />
+                <StatDonut items={data.origins.academicYears} />
               </section>
             </div>
           </section>
