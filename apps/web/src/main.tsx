@@ -1427,8 +1427,17 @@ function AdvisorDashboard() {
         <h1 className="page-title">Mon tableau de bord</h1>
         <h2 className="advisor-upcoming-title">À venir</h2>
         {schedule.some((slot) => slot.appointment) ? (
-          <div className="table-wrap">
+          <div className="table-wrap advisor-upcoming-table">
             <table>
+              <colgroup>
+                <col className="advisor-col-name" />
+                <col className="advisor-col-number" />
+                <col className="advisor-col-date" />
+                <col className="advisor-col-subject" />
+                <col className="advisor-col-status" />
+                <col className="advisor-col-frequency" />
+                <col className="advisor-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Nom et prénom</th>
@@ -1450,31 +1459,31 @@ function AdvisorDashboard() {
                         key={slot.id}
                         className={!item ? "free-slot" : undefined}
                       >
-                        <td>
+                        <td data-label="Nom et prénom">
                           {item
                             ? `${item.student.user.lastName} ${item.student.user.firstName}`
                             : "—"}
                         </td>
-                        <td>{item?.student.universityId ?? "—"}</td>
-                        <td className="table-date">{formatDate(slot.startsAt)}</td>
-                        <td className="appointment-subject-cell">
+                        <td data-label="Numéro étudiant">{item?.student.universityId ?? "—"}</td>
+                        <td className="table-date" data-label="Date et heure">{formatDate(slot.startsAt)}</td>
+                        <td className="appointment-subject-cell" data-label="Objet du rendez-vous">
                           <span title={item?.request.description}>
                             {item?.request.description ?? "Créneau disponible"}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Statut">
                           <span className="status">
                             {formatStatus(item?.status ?? "AVAILABLE")}
                           </span>
                         </td>
-                        <td className="advisor-history-count">
+                        <td className="advisor-history-count" data-label="Fréquentation">
                           {item && (
                             <>
                               {item.historyCount} ent.
                             </>
                           )}
                         </td>
-                        <td className="table-actions advisor-table-actions">
+                        <td className="table-actions advisor-table-actions" data-label="Actions">
                           {item && (
                             <div className="advisor-action-buttons">
                               <button

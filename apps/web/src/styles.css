@@ -985,7 +985,111 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+.advisor-upcoming-table {
+  overflow: visible;
+}
+.advisor-upcoming-table table {
+  min-width: 0;
+  table-layout: fixed;
+}
+.advisor-upcoming-table .advisor-col-name {
+  width: 14%;
+}
+.advisor-upcoming-table .advisor-col-number {
+  width: 10%;
+}
+.advisor-upcoming-table .advisor-col-date {
+  width: 16%;
+}
+.advisor-upcoming-table .advisor-col-subject {
+  width: 16%;
+}
+.advisor-upcoming-table .advisor-col-status {
+  width: 10%;
+}
+.advisor-upcoming-table .advisor-col-frequency {
+  width: 9%;
+}
+.advisor-upcoming-table .advisor-col-actions {
+  width: 25%;
+}
+.advisor-upcoming-table th,
+.advisor-upcoming-table td {
+  overflow-wrap: anywhere;
+}
+.advisor-upcoming-table .appointment-subject-cell {
+  width: auto;
+  max-width: none;
+}
+.advisor-upcoming-table .appointment-subject-cell > span {
+  max-width: 100%;
+}
+@media (max-width: 960px) {
+  .advisor-upcoming-table {
+    border: 0;
+    background: transparent;
+  }
+  .advisor-upcoming-table table,
+  .advisor-upcoming-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .advisor-upcoming-table colgroup,
+  .advisor-upcoming-table thead {
+    display: none;
+  }
+  .advisor-upcoming-table tbody {
+    display: grid;
+    gap: 1rem;
+  }
+  .advisor-upcoming-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid #e6deed;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(78, 42, 132, 0.06);
+    overflow: hidden;
+  }
+  .advisor-upcoming-table td {
+    display: grid;
+    min-width: 0;
+    gap: 0.3rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #eee8f3;
+  }
+  .advisor-upcoming-table td::before {
+    content: attr(data-label);
+    color: #675d70;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .advisor-upcoming-table td:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+  .advisor-upcoming-table .advisor-table-actions {
+    display: block;
+    grid-column: 1 / -1;
+    border-top: 1px solid #eee8f3;
+  }
+  .advisor-upcoming-table .advisor-action-buttons {
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 560px) {
+  .advisor-upcoming-table tr {
+    grid-template-columns: 1fr;
+  }
+  .advisor-upcoming-table td {
+    border-bottom: 1px solid #eee8f3;
+  }
+  .advisor-upcoming-table td:last-child {
+    border-bottom: 0;
+  }
 }
 .appointment-groups {
   display: grid;
