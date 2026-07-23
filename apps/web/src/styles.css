@@ -55,6 +55,25 @@
   display: grid;
   gap: 1rem;
 }
+.origin-group {
+  gap: 1.5rem;
+}
+.origin-sections {
+  display: grid;
+  gap: 1.25rem;
+}
+.origin-sections > section {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #e6deed;
+  border-radius: 14px;
+  background: #faf7fd;
+}
+.origin-sections h3 {
+  margin: 0;
+  color: #4e2a84;
+}
 .frequency-chart {
   width: 100%;
   height: 260px;

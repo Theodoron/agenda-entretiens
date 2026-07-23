@@ -1968,6 +1968,30 @@ const monthLabel = (month: string) =>
       new Date(`${month}-01T12:00:00`),
     ),
   );
+function StatBars({
+  items,
+  translate = false,
+}: {
+  items: StatItem[];
+  translate?: boolean;
+}) {
+  const max = Math.max(1, ...items.map((item) => item.count));
+  return items.length ? (
+    <div className="stat-bars">
+      {items.map((item) => (
+        <div className="stat-bar" key={item.label}>
+          <span>{translate ? formatStatus(item.label) : item.label}</span>
+          <div>
+            <i style={{ width: `${(item.count / max) * 100}%` }} />
+          </div>
+          <strong>{item.count}</strong>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="empty">Aucune donnée.</p>
+  );
+}
 function StatTable({
   title,
   items,
@@ -1977,25 +2001,10 @@ function StatTable({
   items: StatItem[];
   translate?: boolean;
 }) {
-  const max = Math.max(1, ...items.map((item) => item.count));
   return (
     <section className="stat-block">
       <h2>{title}</h2>
-      {items.length ? (
-        <div className="stat-bars">
-          {items.map((item) => (
-            <div className="stat-bar" key={item.label}>
-              <span>{translate ? formatStatus(item.label) : item.label}</span>
-              <div>
-                <i style={{ width: `${(item.count / max) * 100}%` }} />
-              </div>
-              <strong>{item.count}</strong>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="empty">Aucune donnée.</p>
-      )}
+      <StatBars items={items} translate={translate} />
     </section>
   );
 }
@@ -2079,6 +2088,23 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
       </section>
       {data && (
         <>
+          <section className="stat-block origin-group">
+            <h2>Origine</h2>
+            <div className="origin-sections">
+              <section>
+                <h3>Composantes</h3>
+                <StatBars items={data.origins.components} />
+              </section>
+              <section>
+                <h3>Diplômes</h3>
+                <StatBars items={data.origins.degrees} />
+              </section>
+              <section>
+                <h3>Année d’études</h3>
+                <StatBars items={data.origins.academicYears} />
+              </section>
+            </div>
+          </section>
           <section className="stat-block">
             <h2>Fréquence des entretiens par mois</h2>
             {data.monthly.length ? (
@@ -2136,15 +2162,6 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
           <StatTable
             title="Motifs associés à plusieurs entretiens"
             items={data.repeatReasons}
-          />
-          <StatTable
-            title="Origine — composantes"
-            items={data.origins.components}
-          />
-          <StatTable title="Origine — diplômes" items={data.origins.degrees} />
-          <StatTable
-            title="Origine — années d’études"
-            items={data.origins.academicYears}
           />
           <StatTable title="Motifs des entretiens" items={data.reasons} />
           <section className="stat-block">
