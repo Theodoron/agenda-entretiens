@@ -44,7 +44,7 @@ describe('statistiques des entretiens', () => {
     expect(protectedStatistics.totals.appointments).toBe(3);
   });
 
-  it('compte les entretiens par année dans chaque composante sans exposer les petites cohortes', () => {
+  it('compte les étudiants distincts par année dans chaque composante sans exposer les petites cohortes', () => {
     const base = { status: 'BOOKED', reason: 'Orientation', component: 'Faculté de Droit', degree: 'Licence — Droit', createdAt: new Date('2026-01-01'), startsAt: new Date('2026-01-10') };
     const statistics = buildStatistics([
       { ...base, studentId: 'a', academicYear: 'L1' },
@@ -56,7 +56,7 @@ describe('statistiques des entretiens', () => {
 
     expect(protectedStatistics.origins.academicYearsByComponent).toEqual([{
       component: 'Faculté de Droit',
-      years: [{ label: 'L1', count: 3 }],
+      years: [{ label: 'L1', count: 2 }],
     }]);
   });
 

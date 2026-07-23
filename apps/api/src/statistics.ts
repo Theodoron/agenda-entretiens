@@ -11,16 +11,15 @@ const countReasons = (rows: AnalyticsRow[]) => Object.entries(rows.reduce<Record
   return result;
 }, {})).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'));
 const academicYearOrder = ['L1', 'L2', 'L3', 'M1', 'M2', 'BUT1', 'BUT2', 'BUT3', 'D1', 'D2', 'D3+'];
-const countAcademicYearsByComponent = (rows: AnalyticsRow[]) => Object.entries(rows.reduce<Record<string, Record<string, { count: number; students: Set<string> }>>>((result, row) => {
+const countStudentsByAcademicYearAndComponent = (rows: AnalyticsRow[]) => Object.entries(rows.reduce<Record<string, Record<string, Set<string>>>>((result, row) => {
   const component = result[row.component] ??= {};
-  const academicYear = component[row.academicYear] ??= { count: 0, students: new Set<string>() };
-  academicYear.count++;
-  academicYear.students.add(row.studentId);
+  const students = component[row.academicYear] ??= new Set<string>();
+  students.add(row.studentId);
   return result;
 }, {})).map(([component, years]) => ({
   component,
   years: Object.entries(years)
-    .map(([label, value]) => ({ label, count: value.count, students: value.students.size }))
+    .map(([label, students]) => ({ label, count: students.size }))
     .sort((a, b) => academicYearOrder.indexOf(a.label) - academicYearOrder.indexOf(b.label)),
 })).sort((a, b) => a.component.localeCompare(b.component, 'fr'));
 
@@ -45,7 +44,7 @@ export function buildStatistics(rows: AnalyticsRow[]) {
     totals: { appointments: rows.length, students: students.length, repeatStudents: repeated.length, averagePerStudent: students.length ? rows.length / students.length : 0 },
     monthly: countBy(rows, row => row.startsAt.toISOString().slice(0, 7)).sort((a, b) => a.label.localeCompare(b.label)),
     statuses: countBy(rows, row => row.status), reasons: countReasons(rows), reasonByMonth,
-    origins: { components: countBy(uniqueStudents, row => row.component), degrees: countBy(uniqueStudents, row => row.degree), academicYears: countBy(uniqueStudents, row => row.academicYear), academicYearsByComponent: countAcademicYearsByComponent(rows) },
+    origins: { components: countBy(uniqueStudents, row => row.component), degrees: countBy(uniqueStudents, row => row.degree), academicYears: countBy(uniqueStudents, row => row.academicYear), academicYearsByComponent: countStudentsByAcademicYearAndComponent(rows) },
     repeatByComponent,
     accessDelay: { averageDays: delays.length ? delays.reduce((sum, value) => sum + value, 0) / delays.length : 0, medianDays: medianDelay },
     cancellations: { cancelled: rows.filter(row => cancelledStatuses.has(row.status)).length, noShows: rows.filter(row => noShowStatuses.has(row.status)).length, rate: rows.length ? rows.filter(row => cancelledStatuses.has(row.status) || noShowStatuses.has(row.status)).length / rows.length : 0 },
@@ -71,7 +70,7 @@ export function protectSmallCohorts(statistics: ReturnType<typeof buildStatistic
       degrees: visibleCounts(statistics.origins.degrees, minimum),
       academicYears: visibleCounts(statistics.origins.academicYears, minimum),
       academicYearsByComponent: statistics.origins.academicYearsByComponent
-        .map(item => ({ component: item.component, years: item.years.filter(year => year.students >= minimum).map(({ label, count }) => ({ label, count })) }))
+        .map(item => ({ component: item.component, years: visibleCounts(item.years, minimum) }))
         .filter(item => item.years.length > 0),
     },
     repeatByComponent: statistics.repeatByComponent.filter(item => item.students >= minimum),

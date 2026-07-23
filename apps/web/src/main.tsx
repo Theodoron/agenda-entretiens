@@ -2330,7 +2330,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
                 <StatDonut items={data.origins.components} />
               </section>
               <section className="component-year-section">
-                <h3>Entretiens par année et composante</h3>
+                <h3>Étudiants par année et composante</h3>
                 <div className="component-year-grid">
                   {componentDonutDefinitions.map(({ component, colors }) => (
                     <article className="component-year-card" key={component}>
@@ -2340,8 +2340,8 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
                             (item) => item.component === component,
                           )?.years ?? []
                         }
-                        centerLabel="entretiens"
-                        valueLabel="entretiens"
+                        centerLabel="étudiants"
+                        valueLabel="étudiants"
                         colors={colors}
                         compact
                         showLegend={false}
@@ -2350,14 +2350,41 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
                     </article>
                   ))}
                 </div>
-              </section>
-              <section>
-                <h3>Diplômes</h3>
-                <StatBars items={data.origins.degrees} />
+                <div className="component-repeat-table">
+                  <h4>Entretiens multiples par composante</h4>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Composante</th>
+                          <th>Étudiants</th>
+                          <th>Entretiens</th>
+                          <th>Étudiants avec plusieurs entretiens</th>
+                          <th>Moyenne</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.repeatByComponent.map((item) => (
+                          <tr key={item.label}>
+                            <td>{item.label}</td>
+                            <td>{item.students}</td>
+                            <td>{item.appointments}</td>
+                            <td>{item.repeated}</td>
+                            <td>{item.average.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </section>
               <section>
                 <h3>Année d’études</h3>
                 <StatDonut items={data.origins.academicYears} />
+              </section>
+              <section>
+                <h3>Diplômes</h3>
+                <StatBars items={data.origins.degrees} />
               </section>
             </div>
           </section>
@@ -2441,33 +2468,6 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
                 <h3>Motifs associés à plusieurs entretiens</h3>
                 <StatBars items={data.repeatReasons} />
               </section>
-            </div>
-          </section>
-          <section className="stat-block">
-            <h2>Entretiens multiples par composante</h2>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Composante</th>
-                    <th>Étudiants</th>
-                    <th>Entretiens</th>
-                    <th>Étudiants avec plusieurs entretiens</th>
-                    <th>Moyenne</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.repeatByComponent.map((item) => (
-                    <tr key={item.label}>
-                      <td>{item.label}</td>
-                      <td>{item.students}</td>
-                      <td>{item.appointments}</td>
-                      <td>{item.repeated}</td>
-                      <td>{item.average.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </section>
           <StatTable
