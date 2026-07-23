@@ -2007,14 +2007,24 @@ const statColors = [
 const percentageLabel = (value: number) =>
   new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
 function StatDonut({ items }: { items: StatItem[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const total = items.reduce((sum, item) => sum + item.count, 0);
   if (!total) return <p className="empty">Aucune donnée.</p>;
 
   let offset = 0;
   const segments = items.map((item, index) => {
     const start = offset;
-    offset += (item.count / total) * 100;
-    return `${statColors[index % statColors.length]} ${start}% ${offset}%`;
+    const percentage = (item.count / total) * 100;
+    offset += percentage;
+    const angle = (start + percentage / 2) * 3.6 - 90;
+    return {
+      item,
+      start,
+      percentage,
+      color: statColors[index % statColors.length],
+      tooltipX: 50 + Math.cos((angle * Math.PI) / 180) * 38,
+      tooltipY: 50 + Math.sin((angle * Math.PI) / 180) * 38,
+    };
   });
   const description = items
     .map(
@@ -2025,16 +2035,69 @@ function StatDonut({ items }: { items: StatItem[] }) {
 
   return (
     <div className="donut-layout">
-      <div
-        className="donut-chart"
-        style={{ background: `conic-gradient(${segments.join(", ")})` }}
-        role="img"
-        aria-label={description}
-      >
+      <div className="donut-chart">
+        <svg viewBox="0 0 100 100" role="img" aria-label={description}>
+          <circle
+            className="donut-track"
+            cx="50"
+            cy="50"
+            r="40"
+            pathLength="100"
+          />
+          {segments.map((segment, index) => (
+            <circle
+              className={[
+                "donut-segment",
+                activeIndex !== null && activeIndex !== index ? "muted" : "",
+                activeIndex === index ? "active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={segment.item.label}
+              cx="50"
+              cy="50"
+              r="40"
+              pathLength="100"
+              fill="none"
+              stroke={segment.color}
+              strokeDasharray={`${segment.percentage} ${100 - segment.percentage}`}
+              strokeDashoffset={-segment.start}
+              transform="rotate(-90 50 50)"
+              tabIndex={0}
+              aria-label={`${segment.item.label} : ${segment.item.count} étudiants, ${percentageLabel(segment.percentage)} %`}
+              onMouseEnter={() => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              onFocus={() => setActiveIndex(index)}
+              onBlur={() => setActiveIndex(null)}
+            />
+          ))}
+        </svg>
         <div className="donut-center" aria-hidden="true">
           <strong>{total}</strong>
           <span>étudiants</span>
         </div>
+        {activeIndex !== null && (
+          <div
+            className="donut-tooltip"
+            role="tooltip"
+            style={{
+              left: `${segments[activeIndex]?.tooltipX ?? 50}%`,
+              top: `${segments[activeIndex]?.tooltipY ?? 50}%`,
+            }}
+          >
+            <span>
+              <i
+                style={{ backgroundColor: segments[activeIndex]?.color }}
+                aria-hidden="true"
+              />
+              {segments[activeIndex]?.item.label}
+            </span>
+            <strong>
+              {segments[activeIndex]?.item.count} étudiants ·{" "}
+              {percentageLabel(segments[activeIndex]?.percentage ?? 0)} %
+            </strong>
+          </div>
+        )}
       </div>
       <ul className="donut-legend">
         {items.map((item, index) => {
@@ -2073,6 +2136,61 @@ function StatTable({
     </section>
   );
 }
+function VerticalBarChart({
+  items,
+  colors,
+  ariaLabel,
+  formatLabel = (label) => label,
+}: {
+  items: StatItem[];
+  colors: string[];
+  ariaLabel: string;
+  formatLabel?: (label: string) => string;
+}) {
+  if (!items.length) return <p className="empty">Aucune donnée.</p>;
+  const max = Math.max(1, ...items.map((item) => item.count));
+  const description = items
+    .map((item) => `${formatLabel(item.label)} : ${item.count}`)
+    .join(" ; ");
+  return (
+    <div className="vertical-chart-scroll">
+      <div
+        className="vertical-bars"
+        role="img"
+        aria-label={`${ariaLabel}. ${description}`}
+      >
+        {items.map((item, index) => (
+          <div className="vertical-bar-item" key={item.label}>
+            <div className="vertical-bar-track">
+              <div
+                className="vertical-bar-column"
+                style={{ height: `${(item.count / max) * 100}%` }}
+              >
+                <strong>{item.count}</strong>
+                <i
+                  style={{ backgroundColor: colors[index % colors.length] }}
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+            <span>{formatLabel(item.label)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+const academicYearMonths = (items: StatItem[]) => {
+  const counts = new Map(items.map((item) => [item.label, item.count]));
+  const today = new Date();
+  const startYear =
+    today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1;
+  return Array.from({ length: 13 }, (_, index) => {
+    const date = new Date(startYear, 8 + index, 1, 12);
+    const label = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    return { label, count: counts.get(label) ?? 0 };
+  });
+};
 function StatisticsDashboard({ onClose }: { onClose: () => void }) {
   const [data, setData] = useState<Statistics>(),
     [error, setError] = useState("");
@@ -2081,14 +2199,22 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
       .then(setData)
       .catch((value) => setError(value.message));
   }, []);
-  const max = Math.max(1, ...(data?.monthly.map((item) => item.count) ?? [1]));
-  const points =
-    data?.monthly
-      .map(
-        (item, index, list) =>
-          `${list.length === 1 ? 50 : (index / (list.length - 1)) * 100},${100 - (item.count / max) * 90}`,
-      )
-      .join(" ") ?? "";
+  const monthlyFrequency = academicYearMonths(data?.monthly ?? []);
+  const weekdayOrder = [
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dimanche",
+  ];
+  const orderedWeekdays = [...(data?.demand.weekdays ?? [])].sort(
+    (a, b) => weekdayOrder.indexOf(a.label) - weekdayOrder.indexOf(b.label),
+  );
+  const orderedHours = [...(data?.demand.hours ?? [])].sort((a, b) =>
+    a.label.localeCompare(b.label, "fr"),
+  );
   const allReasons = Array.from(
     new Set(
       data?.reasonByMonth.flatMap((item) => Object.keys(item.reasons)) ?? [],
@@ -2171,36 +2297,13 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             </div>
           </section>
           <section className="stat-block">
-            <h2>Fréquence des entretiens par mois</h2>
-            {data.monthly.length ? (
-              <>
-                <svg
-                  className="frequency-chart"
-                  viewBox="0 0 100 105"
-                  preserveAspectRatio="none"
-                  role="img"
-                  aria-label="Courbe du nombre d’entretiens par mois"
-                >
-                  <polyline
-                    points={points}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </svg>
-                <div className="chart-labels">
-                  {data.monthly.map((item) => (
-                    <span key={item.label}>
-                      {monthLabel(item.label)}
-                      <strong>{item.count}</strong>
-                    </span>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="empty">Aucune donnée.</p>
-            )}
+            <h2>Fréquence des entretiens — septembre à septembre</h2>
+            <VerticalBarChart
+              items={monthlyFrequency}
+              colors={statColors}
+              ariaLabel="Nombre d’entretiens par mois, de septembre à septembre"
+              formatLabel={monthLabel}
+            />
           </section>
           <section className="stat-block">
             <h2>Occupation des créneaux par mois</h2>
@@ -2219,39 +2322,56 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </section>
-          <StatTable
-            title="Demande par jour de la semaine"
-            items={data.demand.weekdays}
-          />
-          <StatTable title="Demande par heure" items={data.demand.hours} />
+          <div className="demand-grid">
+            <section className="stat-block demand-days">
+              <h2>Demande par jour de la semaine</h2>
+              <StatBars items={orderedWeekdays} />
+            </section>
+            <section className="stat-block demand-hours">
+              <h2>Demande par heure</h2>
+              <VerticalBarChart
+                items={orderedHours}
+                colors={["#238b82"]}
+                ariaLabel="Nombre de demandes par heure"
+              />
+            </section>
+          </div>
           <StatTable
             title="Motifs associés à plusieurs entretiens"
             items={data.repeatReasons}
           />
-          <StatTable title="Motifs des entretiens" items={data.reasons} />
-          <section className="stat-block">
-            <h2>Motifs par période</h2>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Mois</th>
-                    {allReasons.map((reason) => (
-                      <th key={reason}>{reason}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.reasonByMonth.map((item) => (
-                    <tr key={item.month}>
-                      <td>{monthLabel(item.month)}</td>
-                      {allReasons.map((reason) => (
-                        <td key={reason}>{item.reasons[reason] ?? 0}</td>
+          <section className="stat-block reasons-group">
+            <h2>Motifs</h2>
+            <div className="reason-sections">
+              <section>
+                <h3>Motifs des entretiens</h3>
+                <StatBars items={data.reasons} />
+              </section>
+              <section>
+                <h3>Motifs par période</h3>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Mois</th>
+                        {allReasons.map((reason) => (
+                          <th key={reason}>{reason}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.reasonByMonth.map((item) => (
+                        <tr key={item.month}>
+                          <td>{monthLabel(item.month)}</td>
+                          {allReasons.map((reason) => (
+                            <td key={reason}>{item.reasons[reason] ?? 0}</td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           </section>
           <section className="stat-block">
