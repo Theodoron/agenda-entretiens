@@ -1435,7 +1435,6 @@ function AdvisorDashboard() {
                 <col className="advisor-col-date" />
                 <col className="advisor-col-subject" />
                 <col className="advisor-col-status" />
-                <col className="advisor-col-frequency" />
                 <col className="advisor-col-actions" />
               </colgroup>
               <thead>
@@ -1445,7 +1444,6 @@ function AdvisorDashboard() {
                   <th>Date et heure</th>
                   <th>Objet du rendez-vous</th>
                   <th>Statut</th>
-                  <th>Fréquentation</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -1475,13 +1473,6 @@ function AdvisorDashboard() {
                           <span className="status">
                             {formatStatus(item?.status ?? "AVAILABLE")}
                           </span>
-                        </td>
-                        <td className="advisor-history-count" data-label="Fréquentation">
-                          {item && (
-                            <>
-                              {item.historyCount} ent.
-                            </>
-                          )}
                         </td>
                         <td className="table-actions advisor-table-actions" data-label="Actions">
                           {item && (

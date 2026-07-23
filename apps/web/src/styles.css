@@ -996,22 +996,19 @@
   table-layout: fixed;
 }
 .advisor-upcoming-table .advisor-col-name {
-  width: 14%;
+  width: 15%;
 }
 .advisor-upcoming-table .advisor-col-number {
-  width: 10%;
+  width: 12%;
 }
 .advisor-upcoming-table .advisor-col-date {
-  width: 16%;
+  width: 17%;
 }
 .advisor-upcoming-table .advisor-col-subject {
-  width: 16%;
+  width: 20%;
 }
 .advisor-upcoming-table .advisor-col-status {
-  width: 10%;
-}
-.advisor-upcoming-table .advisor-col-frequency {
-  width: 9%;
+  width: 11%;
 }
 .advisor-upcoming-table .advisor-col-actions {
   width: 25%;
@@ -1067,9 +1064,6 @@
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-  }
-  .advisor-upcoming-table td:nth-last-child(-n + 2) {
-    border-bottom: 0;
   }
   .advisor-upcoming-table .advisor-table-actions {
     display: block;
