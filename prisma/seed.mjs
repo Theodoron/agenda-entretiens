@@ -12,14 +12,24 @@ const demoUuid = (group, index) =>
   `${group}0000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
 
 async function seedStatisticsDemo({ advisorId, studentRoleId, components, degrees, academicYears, reasons }) {
-  const origins = [
-    ...Array.from({ length: 7 }, () => ['UFR Sciences', 'Licence Informatique']),
-    ...Array.from({ length: 5 }, () => ['UFR Sciences', 'Licence Mathématiques']),
-    ...Array.from({ length: 5 }, () => ['IUT', 'BUT Informatique']),
-    ...Array.from({ length: 3 }, () => ['IUT', 'BUT GEA']),
-    ...Array.from({ length: 6 }, () => ['UFR Lettres', 'Licence Lettres modernes']),
-    ...Array.from({ length: 6 }, () => ['UFR Droit', 'Licence Droit']),
+  const demoPrograms = [
+    ['Faculté de Droit', 'Licence — Droit', ['L1', 'L2', 'L3', 'L1', 'L2']],
+    ['Faculté de Droit', 'Master — Droit des affaires', ['M1', 'M2', 'M1', 'M2', 'M1']],
+    ['Faculté de Philosophie', 'Licence — Philosophie', ['L1', 'L2', 'L3', 'L1', 'L2']],
+    ['Faculté de Philosophie', 'Master — Philosophie', ['M1', 'M2', 'M1', 'M2', 'M1']],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Licence — Histoire', ['L1', 'L2', 'L3', 'L1', 'L2']],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Communication des organisations', ['M1', 'M2', 'M1', 'M2', 'M1']],
+    ['Faculté des Langues', 'Licence — Langues Étrangères Appliquées (LEA)', ['L1', 'L2', 'L3', 'L1', 'L2']],
+    ['Faculté des Langues', 'Master — Traduction et interprétation', ['M1', 'M2', 'M1', 'M2', 'M1']],
+    ['iaelyon School of Management', 'Licence — Gestion', ['L1', 'L2', 'L3', 'L1', 'L2']],
+    ['iaelyon School of Management', 'Master — Marketing, Vente', ['M1', 'M2', 'M1', 'M2', 'M1']],
+    ['IUT Jean Moulin', 'BUT — Carrières juridiques', ['BUT1', 'BUT2', 'BUT3', 'BUT1', 'BUT2']],
+    ['IUT Jean Moulin', 'BUT — Gestion administrative et commerciale des organisations (GACO)', ['BUT2', 'BUT3', 'BUT1', 'BUT2', 'BUT3']],
+    ['IUT Jean Moulin', 'BUT — Information - Communication', ['BUT3', 'BUT1', 'BUT2', 'BUT3', 'BUT1']],
   ];
+  const origins = demoPrograms.flatMap(([component, degree, years]) =>
+    years.map(academicYear => [component, degree, academicYear]),
+  );
   const statuses = [
     ...Array.from({ length: 16 }, () => 'COMPLETED'),
     ...Array.from({ length: 8 }, () => 'CONFIRMED'),
@@ -32,7 +42,7 @@ async function seedStatisticsDemo({ advisorId, studentRoleId, components, degree
   const lastNames = ['Martin', 'Bernard', 'Thomas', 'Robert', 'Petit', 'Durand', 'Moreau', 'Simon'];
   let appointmentIndex = 0;
 
-  for (const [studentIndex, [componentName, degreeName]] of origins.entries()) {
+  for (const [studentIndex, [componentName, degreeName, academicYearLabel]] of origins.entries()) {
     const userId = demoUuid('1', studentIndex);
     const email = `stats.etudiant.${String(studentIndex + 1).padStart(2, '0')}@example.test`;
     const user = await prisma.user.upsert({
@@ -48,7 +58,7 @@ async function seedStatisticsDemo({ advisorId, studentRoleId, components, degree
         lastName: lastNames[Math.floor(studentIndex / firstNames.length) % lastNames.length],
       },
     });
-    const academicYear = academicYears[studentIndex % academicYears.length];
+    const academicYear = academicYears.get(academicYearLabel);
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: user.id, roleId: studentRoleId } },
       update: {},
@@ -207,13 +217,94 @@ async function main() {
     });
   }
   const referenceDegrees = [
-    ['UFR Sciences', 'Licence Informatique'],
-    ['UFR Sciences', 'Licence Mathématiques'],
-    ['IUT', 'BUT Informatique'],
-    ['IUT', 'BUT GEA'],
-    ['UFR Lettres', 'Licence Lettres modernes'],
-    ['UFR Droit', 'Licence Droit'],
+    ['Faculté de Droit', 'Licence — Droit'],
+    ['Faculté de Droit', 'Licence professionnelle — Activités juridiques (mandataire judiciaire, protection des majeurs)'],
+    ['Faculté de Droit', 'Licence professionnelle — Assurance, banque, finance : chargé de clientèle'],
+    ['Faculté de Droit', 'Licence professionnelle — Métiers de l\'immobilier : gestion et administration de biens'],
+    ['Faculté de Droit', 'Licence professionnelle — Métiers de l\'immobilier : gestion et développement de patrimoine immobilier'],
+    ['Faculté de Droit', 'Licence professionnelle — Métiers du notariat'],
+    ['Faculté de Droit', 'Master — Administration et liquidation des entreprises en difficulté'],
+    ['Faculté de Droit', 'Master — Droit de la santé'],
+    ['Faculté de Droit', 'Master — Droit des affaires'],
+    ['Faculté de Droit', 'Master — Droit des assurances'],
+    ['Faculté de Droit', 'Master — Droit bancaire et financier'],
+    ['Faculté de Droit', 'Master — Droit du numérique'],
+    ['Faculté de Droit', 'Master — Droit européen'],
+    ['Faculté de Droit', 'Master — Droit fiscal'],
+    ['Faculté de Droit', 'Master — Droit international'],
+    ['Faculté de Droit', 'Master — Droit notarial'],
+    ['Faculté de Droit', 'Master — Droit pénal et sciences criminelles'],
+    ['Faculté de Droit', 'Master — Droit privé'],
+    ['Faculté de Droit', 'Master — Droit public'],
+    ['Faculté de Droit', 'Master — Droit public des affaires'],
+    ['Faculté de Droit', 'Master — Droit social'],
+    ['Faculté de Droit', 'Master — Histoire du droit et des institutions'],
+    ['Faculté de Droit', 'Master — Justice, procès et procédures'],
+    ['Faculté de Droit', 'Master — Management des organisations de santé'],
+    ['Faculté de Droit', 'Master — Relations internationales'],
+    ['Faculté de Droit', 'Master — Risques et environnement'],
+    ['Faculté de Droit', 'Doctorat — Droit, science politique (École doctorale de droit)'],
+    ['Faculté de Philosophie', 'Licence — Philosophie'],
+    ['Faculté de Philosophie', 'Master — Histoire de la philosophie'],
+    ['Faculté de Philosophie', 'Master — Philosophie'],
+    ['Faculté de Philosophie', 'Doctorat — Philosophie'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Licence — Lettres'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Licence — Géographie et aménagement'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Licence — Histoire'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Licence — Information et Communication'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Lettres'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Archives'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Audiovisuel, médias interactifs numériques, jeux'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Communication des organisations'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Géographie, aménagement, environnement et développement'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Gestion de l\'environnement'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Gestion des territoires et développement local'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Histoire'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Humanités numériques'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Information, documentation'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Mondes médiévaux'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Patrimoine et musées'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Master — Sciences des religions et sociétés'],
+    ['Faculté des Humanités, Lettres et Sociétés', 'Doctorat — Lettres, langues, sciences humaines et sociales'],
+    ['Faculté des Langues', 'Licence — Langues Étrangères Appliquées (LEA)'],
+    ['Faculté des Langues', 'Licence — Langues, Littératures et Civilisations Étrangères et Régionales (LLCER)'],
+    ['Faculté des Langues', 'Master — Langues Étrangères Appliquées (LEA)'],
+    ['Faculté des Langues', 'Master — Langues, Littératures et Civilisations Étrangères et Régionales (LLCER)'],
+    ['Faculté des Langues', 'Master — Mondes anciens'],
+    ['Faculté des Langues', 'Master — Traduction et interprétation'],
+    ['Faculté des Langues', 'Doctorat — Langues et littératures étrangères'],
+    ['iaelyon School of Management', 'Licence — Gestion'],
+    ['iaelyon School of Management', 'Licence professionnelle — Assurance, banque, finance : chargé de clientèle'],
+    ['iaelyon School of Management', 'Licence professionnelle — Commerce et distribution'],
+    ['iaelyon School of Management', 'Licence professionnelle — Commercialisation de produits et services'],
+    ['iaelyon School of Management', 'Licence professionnelle — Management et gestion des organisations'],
+    ['iaelyon School of Management', 'Licence professionnelle — Métiers de la communication : chargé de communication'],
+    ['iaelyon School of Management', 'Licence professionnelle — Métiers de l\'électricité et de l\'énergie'],
+    ['iaelyon School of Management', 'Licence professionnelle — Métiers de la gestion et de la comptabilité : comptabilité et paie'],
+    ['iaelyon School of Management', 'Licence professionnelle — Métiers du BTP : bâtiment et construction'],
+    ['iaelyon School of Management', 'Master — Comptabilité - Contrôle - Audit'],
+    ['iaelyon School of Management', 'Master — Contrôle de gestion et audit organisationnel'],
+    ['iaelyon School of Management', 'Master — Entrepreneuriat et management de projets'],
+    ['iaelyon School of Management', 'Master — Finance'],
+    ['iaelyon School of Management', 'Master — Gestion de patrimoine'],
+    ['iaelyon School of Management', 'Master — Gestion de production, logistique, achats'],
+    ['iaelyon School of Management', 'Master — Gestion des ressources humaines'],
+    ['iaelyon School of Management', 'Master — Management des systèmes d\'information'],
+    ['iaelyon School of Management', 'Master — Management et administration des entreprises'],
+    ['iaelyon School of Management', 'Master — Management et commerce international'],
+    ['iaelyon School of Management', 'Master — Management sectoriel'],
+    ['iaelyon School of Management', 'Master — Marketing, Vente'],
+    ['iaelyon School of Management', 'Doctorat — Sciences de gestion'],
+    ['IUT Jean Moulin', 'BUT — Carrières juridiques'],
+    ['IUT Jean Moulin', 'BUT — Gestion administrative et commerciale des organisations (GACO)'],
+    ['IUT Jean Moulin', 'BUT — Information - Communication'],
+    ['IUT Jean Moulin', 'Licence professionnelle — Management et gestion des organisations'],
+    ['IUT Jean Moulin', 'Licence professionnelle — Métiers de la gestion des ressources humaines : assistant'],
   ];
+  await prisma.component.updateMany({
+    where: { name: { in: ['UFR Sciences', 'IUT', 'UFR Lettres', 'UFR Droit'] } },
+    data: { active: false },
+  });
   const components = new Map();
   const degrees = new Map();
   for (const componentName of [...new Set(referenceDegrees.map(([name]) => name))]) {
@@ -233,9 +324,9 @@ async function main() {
     });
     degrees.set(`${componentName}:${degreeName}`, degree);
   }
-  const academicYears = [];
-  for (const label of ['2026-2027', '2025-2026', '2024-2025']) {
-    academicYears.push(await prisma.academicYear.upsert({
+  const academicYears = new Map();
+  for (const label of ['L1', 'L2', 'L3', 'M1', 'M2', 'BUT1', 'BUT2', 'BUT3', 'D1', 'D2', 'D3+']) {
+    academicYears.set(label, await prisma.academicYear.upsert({
       where: { label },
       update: {},
       create: { label },
