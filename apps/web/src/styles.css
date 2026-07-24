@@ -706,6 +706,12 @@
 .sheet-actions .secondary {
   margin: 0;
 }
+.sheet-footer-actions {
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e6deed;
+}
 .communications {
   background: #fff;
   border: 1px solid #e6deed;

@@ -596,6 +596,18 @@ function CommunicationsHub({
           </form>
         </details>
       )}
+      <div className="sheet-actions print-actions sheet-footer-actions">
+        <button className="compact" onClick={() => window.print()} type="button">
+          Imprimer la fiche
+        </button>
+        <button
+          className="secondary compact"
+          onClick={onClose}
+          type="button"
+        >
+          Fermer la fiche
+        </button>
+      </div>
     </section>
   );
 }
