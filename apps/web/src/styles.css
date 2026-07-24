@@ -66,13 +66,22 @@
 }
 .statistics-heading-actions {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.75rem;
 }
-.statistics-heading-actions .secondary {
+.statistics-heading-actions .statistics-return-button {
+  width: auto;
+  min-height: 42px;
   margin: 0;
+  padding: 0.65rem 1rem;
+  background: #4e2a84;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(78, 42, 132, 0.24);
+}
+.statistics-heading-actions .statistics-return-button:hover {
+  background: #3c1f68;
 }
 button.xlsx-export-button {
   display: inline-flex;
@@ -430,7 +439,7 @@ button.xlsx-export-button:disabled {
     flex-direction: column;
   }
   button.xlsx-export-button,
-  .statistics-heading-actions .secondary {
+  .statistics-heading-actions .statistics-return-button {
     width: 100%;
   }
 }

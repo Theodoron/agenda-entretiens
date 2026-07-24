@@ -2347,6 +2347,12 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             <h1 className="page-title">Statistiques des entretiens</h1>
           </div>
           <div className="statistics-heading-actions">
+            <button
+              className="compact statistics-return-button"
+              onClick={onClose}
+            >
+              Retour au tableau de bord
+            </button>
             {data && (
               <StatisticsExportButton
                 busy={exporting === "all"}
@@ -2355,9 +2361,6 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
                 onClick={() => downloadStatistics("all")}
               />
             )}
-            <button className="secondary compact" onClick={onClose}>
-              Retour au tableau de bord
-            </button>
           </div>
         </div>
         {error && (
