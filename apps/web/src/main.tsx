@@ -2386,46 +2386,6 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               </section>
             </div>
           </section>
-          <section className="stat-block">
-            <h2>Fréquence des entretiens — septembre à septembre</h2>
-            <VerticalBarChart
-              items={monthlyFrequency}
-              colors={statColors}
-              ariaLabel="Nombre d’entretiens par mois, de septembre à septembre"
-              formatLabel={monthLabel}
-            />
-          </section>
-          <section className="stat-block">
-            <h2>Occupation des créneaux par mois</h2>
-            <div className="stat-bars">
-              {data.occupancy.monthly.map((item) => (
-                <div className="stat-bar" key={item.label}>
-                  <span>{monthLabel(item.label)}</span>
-                  <div>
-                    <i style={{ width: `${item.rate * 100}%` }} />
-                  </div>
-                  <strong>
-                    {(item.rate * 100).toFixed(0)} % ({item.booked}/{item.total}
-                    )
-                  </strong>
-                </div>
-              ))}
-            </div>
-          </section>
-          <div className="demand-grid">
-            <section className="stat-block demand-days">
-              <h2>Demande par jour de la semaine</h2>
-              <StatBars items={orderedWeekdays} />
-            </section>
-            <section className="stat-block demand-hours">
-              <h2>Demande par heure</h2>
-              <VerticalBarChart
-                items={orderedHours}
-                colors={["#238b82"]}
-                ariaLabel="Nombre de demandes par heure"
-              />
-            </section>
-          </div>
           <section className="stat-block reasons-group">
             <h2>Motifs</h2>
             <div className="reason-sections">
@@ -2468,6 +2428,46 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               </section>
             </div>
           </section>
+          <section className="stat-block">
+            <h2>Fréquence des entretiens — septembre à septembre</h2>
+            <VerticalBarChart
+              items={monthlyFrequency}
+              colors={statColors}
+              ariaLabel="Nombre d’entretiens par mois, de septembre à septembre"
+              formatLabel={monthLabel}
+            />
+          </section>
+          <section className="stat-block">
+            <h2>Occupation des créneaux par mois</h2>
+            <div className="stat-bars">
+              {data.occupancy.monthly.map((item) => (
+                <div className="stat-bar" key={item.label}>
+                  <span>{monthLabel(item.label)}</span>
+                  <div>
+                    <i style={{ width: `${item.rate * 100}%` }} />
+                  </div>
+                  <strong>
+                    {(item.rate * 100).toFixed(0)} % ({item.booked}/{item.total}
+                    )
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="demand-grid">
+            <section className="stat-block demand-days">
+              <h2>Demande par jour de la semaine</h2>
+              <StatBars items={orderedWeekdays} />
+            </section>
+            <section className="stat-block demand-hours">
+              <h2>Demande par heure</h2>
+              <VerticalBarChart
+                items={orderedHours}
+                colors={["#238b82"]}
+                ariaLabel="Nombre de demandes par heure"
+              />
+            </section>
+          </div>
           <StatTable
             title="Statuts des entretiens"
             items={data.statuses}
