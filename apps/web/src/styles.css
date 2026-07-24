@@ -908,6 +908,9 @@ button.xlsx-export-button:disabled {
   padding-top: 2.25rem;
   border-top: 1px solid #e6deed;
 }
+.documents-panel form::after {
+  display: none;
+}
 .document-list {
   display: grid;
   gap: 0.65rem;
@@ -1230,7 +1233,6 @@ button.xlsx-export-button:disabled {
   margin-top: 2.75rem;
   padding: 1rem;
   border: 1px solid #e7dcc8;
-  border-top: 0;
   border-radius: 12px;
   background: #fffdf9;
 }
