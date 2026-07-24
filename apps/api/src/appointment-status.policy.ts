@@ -37,3 +37,7 @@ export function canStudentCancel(startsAt: Date, minimumHours = 24, now = new Da
   const safeMinimumHours = Number.isFinite(minimumHours) && minimumHours >= 0 ? minimumHours : 24;
   return startsAt.getTime() - now.getTime() >= safeMinimumHours * 60 * 60_000;
 }
+
+export function canReactivateAppointment(status: AppointmentStatus, startsAt: Date, now = new Date()): boolean {
+  return (status === 'CANCELLED_BY_ADVISOR' || status === 'CANCELLED_BY_ADMIN') && startsAt > now;
+}

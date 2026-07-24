@@ -5,7 +5,7 @@ import type { Request } from 'express';
 import nodemailer from 'nodemailer';
 import { requireRole, requireUserId } from './current-user';
 import { PrismaService } from './prisma.service';
-import { canStudentAccessAppointment, canStudentCancel, canTransition, isCancellationReasonValid, shouldRepublishAvailability } from './appointment-status.policy';
+import { canReactivateAppointment, canStudentAccessAppointment, canStudentCancel, canTransition, isCancellationReasonValid, shouldRepublishAvailability } from './appointment-status.policy';
 
 class BookAppointmentDto {
   @IsUUID() availabilityId!: string;
@@ -53,6 +53,44 @@ export class AppointmentsService {
         to: student.email,
         subject: 'Annulation de votre entretien',
         text: `Bonjour ${student.firstName},\n\nVotre entretien prévu le ${formattedDate} a été annulé par ${cancelledBy}.\n\nMotif : ${reason}\n\nVous pouvez réserver un nouveau créneau depuis votre espace CIDO.`,
+      });
+      await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'SENT', sentAt: new Date() } });
+    } catch {
+      await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
+    }
+  }
+
+  private async notifyReactivation(eventId: string, studentId: string, appointmentId: string, startsAt: Date) {
+    await this.prisma.notification.upsert({
+      where: { deduplicationKey: `${eventId}:${studentId}:in-app` },
+      update: {},
+      create: { userId: studentId, channel: 'IN_APP', type: 'appointment.reactivated', status: 'PENDING', payload: { appointmentId }, scheduledAt: new Date(), deduplicationKey: `${eventId}:${studentId}:in-app` },
+    });
+    const student = await this.prisma.user.findUnique({ where: { id: studentId }, select: { email: true, firstName: true } });
+    if (!student) return;
+    const deduplicationKey = `${eventId}:${studentId}:email`;
+    const notification = await this.prisma.notification.upsert({
+      where: { deduplicationKey },
+      update: {},
+      create: { userId: studentId, channel: 'EMAIL', type: 'appointment.reactivated', status: 'PENDING', payload: { appointmentId }, scheduledAt: new Date(), deduplicationKey },
+    });
+    if (notification.status === 'SENT') return;
+    const host = process.env.SMTP_HOST;
+    if (!host) {
+      await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
+      return;
+    }
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASSWORD;
+    const mailer = nodemailer.createTransport({ host, port, secure: port === 465, connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 15_000, ...(user && pass ? { auth: { user, pass } } : {}) });
+    try {
+      const formattedDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(startsAt);
+      await mailer.sendMail({
+        from: process.env.MAIL_FROM ?? 'Service orientation <orientation@example.test>',
+        to: student.email,
+        subject: 'Réactivation de votre entretien',
+        text: `Bonjour ${student.firstName},\n\nVotre entretien prévu le ${formattedDate} est de nouveau confirmé.\n\nVous le retrouverez dans votre espace CIDO.`,
       });
       await this.prisma.notification.update({ where: { id: notification.id }, data: { status: 'SENT', sentAt: new Date() } });
     } catch {
@@ -135,6 +173,73 @@ export class AppointmentsService {
     return result.updated;
   }
 
+  async reactivate(userId: string, id: string) {
+    const appointment = await this.prisma.appointment.findUnique({ where: { id }, include: { availability: true } });
+    if (!appointment) throw new BadRequestException('Rendez-vous introuvable');
+    const isAdvisor = appointment.advisorId === userId;
+    const isAdmin = !!await this.prisma.userRole.findFirst({ where: { userId, role: { code: 'ADMIN' } } });
+    if (!isAdvisor && !isAdmin) throw new ForbiddenException();
+    if (isAdvisor && !isAdmin && appointment.status !== 'CANCELLED_BY_ADVISOR') {
+      throw new ForbiddenException('Un conseiller peut uniquement réactiver un entretien qu’il a annulé');
+    }
+    if (!canReactivateAppointment(appointment.status, appointment.availability.startsAt)) {
+      throw new BadRequestException('Seul un entretien futur annulé par un conseiller ou un administrateur peut être réactivé');
+    }
+    if (appointment.availability.status !== 'CANCELLED') {
+      throw new ConflictException('Le créneau de cet entretien n’est plus récupérable');
+    }
+
+    try {
+      const result = await this.prisma.$transaction(async tx => {
+        const overlappingAvailability = await tx.availability.count({
+          where: {
+            id: { not: appointment.availabilityId },
+            advisorId: appointment.advisorId,
+            status: { in: ['AVAILABLE', 'HELD', 'BOOKED'] },
+            startsAt: { lt: appointment.availability.endsAt },
+            endsAt: { gt: appointment.availability.startsAt },
+          },
+        });
+        if (overlappingAvailability > 0) {
+          throw new ConflictException('Le créneau est désormais occupé ou chevauche une autre disponibilité');
+        }
+
+        const restoredSlot = await tx.availability.updateMany({
+          where: { id: appointment.availabilityId, version: appointment.availability.version, status: 'CANCELLED' },
+          data: { status: 'BOOKED', heldByUserId: null, heldUntil: null, version: { increment: 1 } },
+        });
+        const restoredAppointment = await tx.appointment.updateMany({
+          where: { id, version: appointment.version, status: appointment.status },
+          data: { status: 'CONFIRMED', archivedAt: null, archivedById: null, version: { increment: 1 } },
+        });
+        if (restoredSlot.count !== 1 || restoredAppointment.count !== 1) {
+          throw new ConflictException('L’entretien a été modifié entre-temps');
+        }
+
+        await tx.appointmentStatusHistory.create({
+          data: { appointmentId: id, fromStatus: appointment.status, toStatus: 'CONFIRMED', actorId: userId, reason: 'Réactivation après annulation' },
+        });
+        const event = await tx.outboxEvent.create({
+          data: {
+            aggregateType: 'Appointment',
+            aggregateId: id,
+            type: 'appointment.reactivated',
+            payload: { appointmentId: id, studentId: appointment.studentId, advisorId: appointment.advisorId, fromStatus: appointment.status, toStatus: 'CONFIRMED' },
+          },
+        });
+        return { eventId: event.id };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      await this.notifyReactivation(result.eventId, appointment.studentId, id, appointment.availability.startsAt);
+      return { id, status: AppointmentStatus.CONFIRMED };
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof ConflictException || error instanceof ForbiddenException) throw error;
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('L’entretien a été modifié entre-temps');
+      }
+      throw error;
+    }
+  }
+
   async mine(userId: string) {
     const roles = await this.prisma.userRole.findMany({ where: { userId }, select: { role: { select: { code: true } } } });
     const codes = roles.map(item => item.role.code);
@@ -191,5 +296,6 @@ export class AppointmentsController {
   @Get('student/:studentId/history') history(@Req() req: Request, @Param('studentId') studentId: string) { return this.appointments.studentHistory(requireUserId(req), studentId); }
   @Patch('archive') archive(@Req() req: Request, @Body() dto: ArchiveAppointmentsDto) { return this.appointments.updateArchive(requireUserId(req), dto); }
   @Get(':id') one(@Req() req: Request, @Param('id') id: string) { return this.appointments.one(requireUserId(req), id); }
+  @Patch(':id/reactivate') reactivate(@Req() req: Request, @Param('id') id: string) { return this.appointments.reactivate(requireUserId(req), id); }
   @Patch(':id/status') changeStatus(@Req() req: Request, @Param('id') id: string, @Body() dto: ChangeStatusDto) { return this.appointments.changeStatus(requireUserId(req), id, dto); }
 }

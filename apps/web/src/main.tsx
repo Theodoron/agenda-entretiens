@@ -1029,6 +1029,7 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
   const [periodEnd, setPeriodEnd] = useState("");
   const [archiveView, setArchiveView] = useState<"active" | "archived" | "all">("active");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [reactivatingId, setReactivatingId] = useState("");
 
   useEffect(() => {
     api<Appointment[]>("/appointments")
@@ -1090,6 +1091,26 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
       );
     } catch (value) {
       setError((value as Error).message);
+    }
+  }
+
+  async function reactivate(item: Appointment) {
+    if (!window.confirm(
+      `Réactiver l’entretien de ${item.student.user.firstName} ${item.student.user.lastName} prévu le ${formatDate(item.availability.startsAt)} ? L’étudiant sera informé.`,
+    )) return;
+    setError("");
+    setNotice("");
+    setReactivatingId(item.id);
+    try {
+      await api(`/appointments/${item.id}/reactivate`, { method: "PATCH" });
+      const refreshed = await api<Appointment[]>("/appointments");
+      setAppointments(refreshed);
+      setSelectedIds((current) => current.filter((id) => id !== item.id));
+      setNotice("L’entretien a été réactivé et l’étudiant a été informé.");
+    } catch (value) {
+      setError((value as Error).message);
+    } finally {
+      setReactivatingId("");
     }
   }
 
@@ -1285,6 +1306,17 @@ function AdvisorHistory({ onClose }: { onClose: () => void }) {
                       {item.archivedAt && <span className="archived-badge">Archivé</span>}
                     </td>
                     <td className="table-actions">
+                      {item.status === "CANCELLED_BY_ADVISOR" &&
+                        new Date(item.availability.startsAt) > new Date() && (
+                          <button
+                            className="secondary compact"
+                            disabled={reactivatingId === item.id}
+                            onClick={() => reactivate(item)}
+                            type="button"
+                          >
+                            {reactivatingId === item.id ? "Réactivation…" : "Réactiver"}
+                          </button>
+                        )}
                       <button
                         className="compact"
                         onClick={() => setSheetId(item.id)}
