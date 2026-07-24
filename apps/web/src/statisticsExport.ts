@@ -53,7 +53,7 @@ export type StatisticsExportData = {
 };
 
 export type StatisticsExportSection =
-  "origins" | "reasons" | "frequency" | "occupancy" | "demand" | "statuses";
+  "origins" | "reasons" | "frequencyStatuses";
 
 type ExportFormatters = {
   month: (value: string) => string;
@@ -276,33 +276,25 @@ export function buildStatisticsExportSheets(
     ),
   ];
 
-  const frequencyRows: SheetData = [
-    ...metadataRows(
-      "Fréquence des entretiens — septembre à septembre",
-      statistics,
-      2,
-      exportedAt,
-    ),
+  const orderedWeekdays = [...statistics.demand.weekdays].sort(
+    (a, b) => weekdayOrder.indexOf(a.label) - weekdayOrder.indexOf(b.label),
+  );
+  const orderedHours = [...statistics.demand.hours].sort((a, b) =>
+    a.label.localeCompare(b.label, "fr"),
+  );
+  const frequencyStatusRows: SheetData = [
+    ...metadataRows("Fréquences et Statuts", statistics, 4, exportedAt),
     ...tableRows(
-      "Nombre d’entretiens par mois",
+      "Fréquence des entretiens — septembre à septembre",
       ["Mois", "Entretiens"],
       simpleCountRows(
         academicYearMonths(statistics.monthly, exportedAt),
         formatters.month,
       ),
-      2,
-    ),
-  ];
-
-  const occupancyRows: SheetData = [
-    ...metadataRows(
-      "Occupation des créneaux par mois",
-      statistics,
       4,
-      exportedAt,
     ),
     ...tableRows(
-      "Occupation mensuelle",
+      "Occupation des créneaux par mois",
       ["Mois", "Créneaux proposés", "Créneaux réservés", "Taux d’occupation"],
       statistics.occupancy.monthly.map((item): Row => [
         formatters.month(item.label),
@@ -312,37 +304,23 @@ export function buildStatisticsExportSheets(
       ]),
       4,
     ),
-  ];
-
-  const orderedWeekdays = [...statistics.demand.weekdays].sort(
-    (a, b) => weekdayOrder.indexOf(a.label) - weekdayOrder.indexOf(b.label),
-  );
-  const orderedHours = [...statistics.demand.hours].sort((a, b) =>
-    a.label.localeCompare(b.label, "fr"),
-  );
-  const demandRows: SheetData = [
-    ...metadataRows("Demande", statistics, 2, exportedAt),
     ...tableRows(
       "Demande par jour de la semaine",
       ["Jour", "Demandes"],
       simpleCountRows(orderedWeekdays),
-      2,
+      4,
     ),
     ...tableRows(
       "Demande par heure",
       ["Heure", "Demandes"],
       simpleCountRows(orderedHours),
-      2,
+      4,
     ),
-  ];
-
-  const statusRows: SheetData = [
-    ...metadataRows("Statuts des entretiens", statistics, 2, exportedAt),
     ...tableRows(
-      "Répartition par statut",
+      "Statuts des entretiens",
       ["Statut", "Entretiens"],
       simpleCountRows(statistics.statuses, formatters.status),
-      2,
+      4,
     ),
   ];
 
@@ -372,35 +350,11 @@ export function buildStatisticsExportSheets(
       showGridLines: false,
     },
     {
-      key: "frequency",
-      sheet: "Fréquence",
-      fileSlug: "frequence",
-      data: frequencyRows,
-      columns: [{ width: 24 }, { width: 18 }],
-      showGridLines: false,
-    },
-    {
-      key: "occupancy",
-      sheet: "Occupation",
-      fileSlug: "occupation",
-      data: occupancyRows,
-      columns: [{ width: 24 }, { width: 22 }, { width: 22 }, { width: 22 }],
-      showGridLines: false,
-    },
-    {
-      key: "demand",
-      sheet: "Demande",
-      fileSlug: "demande",
-      data: demandRows,
-      columns: [{ width: 28 }, { width: 18 }],
-      showGridLines: false,
-    },
-    {
-      key: "statuses",
-      sheet: "Statuts",
-      fileSlug: "statuts",
-      data: statusRows,
-      columns: [{ width: 34 }, { width: 18 }],
+      key: "frequencyStatuses",
+      sheet: "Fréquences et Statuts",
+      fileSlug: "frequences-et-statuts",
+      data: frequencyStatusRows,
+      columns: [{ width: 34 }, { width: 22 }, { width: 22 }, { width: 22 }],
       showGridLines: false,
     },
   ];

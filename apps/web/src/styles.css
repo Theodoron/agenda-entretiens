@@ -371,6 +371,7 @@ button.xlsx-export-button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
+.frequency-status-sections > section,
 .demand-grid > section,
 .reason-sections > section {
   display: grid;
@@ -380,12 +381,25 @@ button.xlsx-export-button:disabled {
   border-radius: 14px;
   background: #faf7fd;
 }
-.demand-group {
+.frequency-status-group,
+.frequency-status-sections {
   gap: 1.5rem;
 }
-.demand-grid h3 {
+.frequency-status-sections {
+  display: grid;
+}
+.frequency-status-sections h3 {
   margin: 0;
   color: #4e2a84;
+}
+.demand-group {
+  display: grid;
+  gap: 1.5rem;
+}
+.demand-grid h4 {
+  margin: 0;
+  color: #4e2a84;
+  font-size: 1rem;
 }
 .demand-days .stat-bar i {
   background: #d45b87;

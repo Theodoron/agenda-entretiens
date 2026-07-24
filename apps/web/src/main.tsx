@@ -2149,24 +2149,6 @@ function StatDonut({
     </div>
   );
 }
-function StatTable({
-  title,
-  items,
-  translate = false,
-  action,
-}: {
-  title: string;
-  items: StatItem[];
-  translate?: boolean;
-  action?: React.ReactNode;
-}) {
-  return (
-    <section className="stat-block">
-      <StatHeading title={title} action={action} />
-      <StatBars items={items} translate={translate} />
-    </section>
-  );
-}
 function StatHeading({
   title,
   action,
@@ -2511,61 +2493,61 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               </section>
             </div>
           </section>
-          <section className="stat-block">
+          <section className="stat-block frequency-status-group">
             <StatHeading
-              title="Fréquence des entretiens — septembre à septembre"
-              action={exportButton("frequency")}
+              title="Fréquences et Statuts"
+              action={exportButton("frequencyStatuses")}
             />
-            <VerticalBarChart
-              items={monthlyFrequency}
-              colors={statColors}
-              ariaLabel="Nombre d’entretiens par mois, de septembre à septembre"
-              formatLabel={monthLabel}
-            />
-          </section>
-          <section className="stat-block">
-            <StatHeading
-              title="Occupation des créneaux par mois"
-              action={exportButton("occupancy")}
-            />
-            <div className="stat-bars">
-              {data.occupancy.monthly.map((item) => (
-                <div className="stat-bar" key={item.label}>
-                  <span>{monthLabel(item.label)}</span>
-                  <div>
-                    <i style={{ width: `${item.rate * 100}%` }} />
-                  </div>
-                  <strong>
-                    {(item.rate * 100).toFixed(0)} % ({item.booked}/{item.total}
-                    )
-                  </strong>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="stat-block demand-group">
-            <StatHeading title="Demande" action={exportButton("demand")} />
-            <div className="demand-grid">
-              <section className="demand-days">
-                <h3>Par jour de la semaine</h3>
-                <StatBars items={orderedWeekdays} />
-              </section>
-              <section className="demand-hours">
-                <h3>Par heure</h3>
+            <div className="frequency-status-sections">
+              <section>
+                <h3>Fréquence des entretiens — septembre à septembre</h3>
                 <VerticalBarChart
-                  items={orderedHours}
-                  colors={["#238b82"]}
-                  ariaLabel="Nombre de demandes par heure"
+                  items={monthlyFrequency}
+                  colors={statColors}
+                  ariaLabel="Nombre d’entretiens par mois, de septembre à septembre"
+                  formatLabel={monthLabel}
                 />
               </section>
+              <section>
+                <h3>Occupation des créneaux par mois</h3>
+                <div className="stat-bars">
+                  {data.occupancy.monthly.map((item) => (
+                    <div className="stat-bar" key={item.label}>
+                      <span>{monthLabel(item.label)}</span>
+                      <div>
+                        <i style={{ width: `${item.rate * 100}%` }} />
+                      </div>
+                      <strong>
+                        {(item.rate * 100).toFixed(0)} % ({item.booked}/
+                        {item.total})
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              <section className="demand-group">
+                <h3>Demande</h3>
+                <div className="demand-grid">
+                  <section className="demand-days">
+                    <h4>Par jour de la semaine</h4>
+                    <StatBars items={orderedWeekdays} />
+                  </section>
+                  <section className="demand-hours">
+                    <h4>Par heure</h4>
+                    <VerticalBarChart
+                      items={orderedHours}
+                      colors={["#238b82"]}
+                      ariaLabel="Nombre de demandes par heure"
+                    />
+                  </section>
+                </div>
+              </section>
+              <section>
+                <h3>Statuts des entretiens</h3>
+                <StatBars items={data.statuses} translate />
+              </section>
             </div>
           </section>
-          <StatTable
-            title="Statuts des entretiens"
-            items={data.statuses}
-            translate
-            action={exportButton("statuses")}
-          />
         </>
       )}
     </div>

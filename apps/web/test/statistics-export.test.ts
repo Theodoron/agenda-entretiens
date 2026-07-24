@@ -64,7 +64,7 @@ const cellText = (cell: unknown) => {
   return String(cell ?? "");
 };
 
-test("prépare les six rubriques dans le classeur global", () => {
+test("prépare les trois rubriques dans le classeur global", () => {
   const sheets = buildStatisticsExportSheets(
     statistics,
     {
@@ -76,9 +76,18 @@ test("prépare les six rubriques dans le classeur global", () => {
 
   assert.deepEqual(
     sheets.map((sheet) => sheet.sheet),
-    ["Origine", "Motifs", "Fréquence", "Occupation", "Demande", "Statuts"],
+    ["Origine", "Motifs", "Fréquences et Statuts"],
   );
-  assert.equal(sheets.length, 6);
+  assert.equal(sheets.length, 3);
+  const frequencyStatusText = sheets
+    .find((sheet) => sheet.key === "frequencyStatuses")
+    ?.data.flat()
+    .map(cellText)
+    .join(" ");
+  assert.match(frequencyStatusText ?? "", /Fréquence des entretiens/);
+  assert.match(frequencyStatusText ?? "", /Occupation des créneaux/);
+  assert.match(frequencyStatusText ?? "", /Demande par jour/);
+  assert.match(frequencyStatusText ?? "", /Statuts des entretiens/);
 });
 
 test("exporte uniquement les ventilations déjà protégées par l’API", () => {
