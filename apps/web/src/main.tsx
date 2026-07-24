@@ -2006,29 +2006,39 @@ const statColors = [
 const componentDonutDefinitions = [
   {
     component: "Faculté de Droit",
+    color: "#a8323a",
     colors: ["#861f27", "#a8323a", "#c94b53", "#df7278", "#ef9da1"],
   },
   {
     component: "Faculté des Humanités, Lettres et Sociétés",
+    color: "#347b53",
     colors: ["#205c3b", "#347b53", "#4f9c6c", "#75b98d", "#a2d2b2"],
   },
   {
     component: "iaelyon School of Management",
+    color: "#1f456f",
     colors: ["#122b49", "#1f456f", "#34618e", "#577fa7", "#86a3c1"],
   },
   {
     component: "Faculté des Langues",
+    color: "#3f9abe",
     colors: ["#247da0", "#3f9abe", "#65b4d1", "#8bcbe0", "#b6dfeb"],
   },
   {
     component: "Faculté de Philosophie",
-    colors: ["#66651e", "#85832b", "#a3a044", "#c0bb68", "#d9d49a"],
+    color: "#c1911f",
+    colors: ["#795b14", "#9d7619", "#c1911f", "#d3ac49", "#e4ca7c"],
   },
   {
     component: "IUT Jean Moulin",
-    colors: ["#a94d08", "#ce6907", "#eb890b", "#f3aa3f", "#f8cd7a"],
+    color: "#f09b0b",
+    colors: ["#bd5c06", "#dd7907", "#f09b0b", "#f5b832", "#f8d36b"],
   },
 ];
+const componentColor = (component: string, fallbackIndex: number) =>
+  componentDonutDefinitions.find((item) => item.component === component)?.color ??
+  statColors[fallbackIndex % statColors.length] ??
+  "#4e2a84";
 const percentageLabel = (value: number) =>
   new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
 function StatDonut({
@@ -2325,7 +2335,12 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             <div className="origin-sections">
               <section>
                 <h3>Composantes</h3>
-                <StatDonut items={data.origins.components} />
+                <StatDonut
+                  items={data.origins.components}
+                  colors={data.origins.components.map((item, index) =>
+                    componentColor(item.label, index),
+                  )}
+                />
               </section>
               <section className="component-year-section">
                 <h3>Étudiants par année et composante</h3>
