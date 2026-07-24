@@ -988,11 +988,19 @@
   vertical-align: middle;
 }
 .advisor-action-buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
   gap: 0.5rem;
+  width: 100%;
+}
+.advisor-action-buttons > button {
+  width: 100%;
+  min-width: 0;
+}
+.advisor-action-buttons > button:first-child {
+  grid-column: 1 / -1;
 }
 .advisor-upcoming-table {
   overflow: visible;
