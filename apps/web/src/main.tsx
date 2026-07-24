@@ -5,6 +5,11 @@ import { CancellationDialog } from "./components/CancellationDialog";
 import { DatePicker } from "./components/DatePicker";
 import { ReservationDialog } from "./components/ReservationDialog";
 import { TimePicker } from "./components/TimePicker";
+import {
+  exportStatisticsWorkbook,
+  type StatisticsExportData,
+  type StatisticsExportSection,
+} from "./statisticsExport";
 import "./styles.css";
 
 type Role = "STUDENT" | "ADVISOR" | "ADMIN";
@@ -1933,46 +1938,7 @@ function AdminDashboard() {
 }
 
 type StatItem = { label: string; count: number };
-type Statistics = {
-  totals: {
-    appointments: number;
-    students: number;
-    repeatStudents: number;
-    averagePerStudent: number;
-  };
-  monthly: StatItem[];
-  statuses: StatItem[];
-  reasons: StatItem[];
-  reasonByMonth: { month: string; reasons: Record<string, number> }[];
-  origins: {
-    components: StatItem[];
-    degrees: StatItem[];
-    academicYears: StatItem[];
-    academicYearsByComponent: { component: string; years: StatItem[] }[];
-  };
-  repeatByComponent: {
-    label: string;
-    students: number;
-    appointments: number;
-    repeated: number;
-    average: number;
-  }[];
-  occupancy: {
-    totalSlots: number;
-    bookedSlots: number;
-    rate: number;
-    monthly: { label: string; total: number; booked: number; rate: number }[];
-  };
-  accessDelay: { averageDays: number; medianDays: number };
-  cancellations: { cancelled: number; noShows: number; rate: number };
-  demand: { weekdays: StatItem[]; hours: StatItem[] };
-  repeatReasons: StatItem[];
-  privacy: {
-    smallCohortThreshold: number;
-    aggregatedOnly: boolean;
-    scope: "GLOBAL" | "ADVISOR";
-  };
-};
+type Statistics = StatisticsExportData;
 const monthLabel = (month: string) =>
   capitalizeDatePart(
     new Intl.DateTimeFormat("fr-FR", { month: "short", year: "numeric" }).format(
@@ -2187,16 +2153,57 @@ function StatTable({
   title,
   items,
   translate = false,
+  action,
 }: {
   title: string;
   items: StatItem[];
   translate?: boolean;
+  action?: React.ReactNode;
 }) {
   return (
     <section className="stat-block">
-      <h2>{title}</h2>
+      <StatHeading title={title} action={action} />
       <StatBars items={items} translate={translate} />
     </section>
+  );
+}
+function StatHeading({
+  title,
+  action,
+}: {
+  title: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="stat-heading">
+      <h2>{title}</h2>
+      {action}
+    </div>
+  );
+}
+function StatisticsExportButton({
+  label = "Exporter en XLSX",
+  busy,
+  disabled = false,
+  onClick,
+}: {
+  label?: string;
+  busy: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="xlsx-export-button compact"
+      disabled={busy || disabled}
+      onClick={onClick}
+      type="button"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" />
+      </svg>
+      {busy ? "Préparation…" : label}
+    </button>
   );
 }
 function VerticalBarChart({
@@ -2256,7 +2263,11 @@ const academicYearMonths = (items: StatItem[]) => {
 };
 function StatisticsDashboard({ onClose }: { onClose: () => void }) {
   const [data, setData] = useState<Statistics>(),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [exportError, setExportError] = useState(""),
+    [exporting, setExporting] = useState<
+      StatisticsExportSection | "all" | null
+    >(null);
   useEffect(() => {
     api<Statistics>("/statistics/overview")
       .then(setData)
@@ -2283,6 +2294,36 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
       data?.reasonByMonth.flatMap((item) => Object.keys(item.reasons)) ?? [],
     ),
   );
+  async function downloadStatistics(
+    section: StatisticsExportSection | "all",
+  ) {
+    if (!data || exporting) return;
+    setExportError("");
+    setExporting(section);
+    try {
+      await exportStatisticsWorkbook(data, section, {
+        month: monthLabel,
+        status: formatStatus,
+      });
+    } catch (value) {
+      setExportError(
+        value instanceof Error
+          ? value.message
+          : "La création du fichier XLSX a échoué.",
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
+  const exportButton = (
+    section: StatisticsExportSection,
+  ) => (
+    <StatisticsExportButton
+      busy={exporting === section}
+      disabled={exporting !== null}
+      onClick={() => downloadStatistics(section)}
+    />
+  );
   return (
     <div className="dashboard statistics-page">
       <section>
@@ -2291,13 +2332,28 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             <p className="eyebrow">Pilotage</p>
             <h1 className="page-title">Statistiques des entretiens</h1>
           </div>
-          <button className="secondary compact" onClick={onClose}>
-            Retour au tableau de bord
-          </button>
+          <div className="statistics-heading-actions">
+            {data && (
+              <StatisticsExportButton
+                busy={exporting === "all"}
+                disabled={exporting !== null}
+                label="Exporter toutes les statistiques"
+                onClick={() => downloadStatistics("all")}
+              />
+            )}
+            <button className="secondary compact" onClick={onClose}>
+              Retour au tableau de bord
+            </button>
+          </div>
         </div>
         {error && (
           <div className="error" role="alert">
             {error}
+          </div>
+        )}
+        {exportError && (
+          <div className="error" role="alert">
+            {exportError}
           </div>
         )}
         {data && (
@@ -2343,7 +2399,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
       {data && (
         <>
           <section className="stat-block origin-group">
-            <h2>Origine</h2>
+            <StatHeading title="Origine" action={exportButton("origins")} />
             <div className="origin-sections">
               <section>
                 <h3>Composantes</h3>
@@ -2414,7 +2470,7 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             </div>
           </section>
           <section className="stat-block reasons-group">
-            <h2>Motifs</h2>
+            <StatHeading title="Motifs" action={exportButton("reasons")} />
             <div className="reason-sections">
               <section>
                 <h3>Motifs des entretiens</h3>
@@ -2456,7 +2512,10 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             </div>
           </section>
           <section className="stat-block">
-            <h2>Fréquence des entretiens — septembre à septembre</h2>
+            <StatHeading
+              title="Fréquence des entretiens — septembre à septembre"
+              action={exportButton("frequency")}
+            />
             <VerticalBarChart
               items={monthlyFrequency}
               colors={statColors}
@@ -2465,7 +2524,10 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
             />
           </section>
           <section className="stat-block">
-            <h2>Occupation des créneaux par mois</h2>
+            <StatHeading
+              title="Occupation des créneaux par mois"
+              action={exportButton("occupancy")}
+            />
             <div className="stat-bars">
               {data.occupancy.monthly.map((item) => (
                 <div className="stat-bar" key={item.label}>
@@ -2481,24 +2543,28 @@ function StatisticsDashboard({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </section>
-          <div className="demand-grid">
-            <section className="stat-block demand-days">
-              <h2>Demande par jour de la semaine</h2>
-              <StatBars items={orderedWeekdays} />
-            </section>
-            <section className="stat-block demand-hours">
-              <h2>Demande par heure</h2>
-              <VerticalBarChart
-                items={orderedHours}
-                colors={["#238b82"]}
-                ariaLabel="Nombre de demandes par heure"
-              />
-            </section>
-          </div>
+          <section className="stat-block demand-group">
+            <StatHeading title="Demande" action={exportButton("demand")} />
+            <div className="demand-grid">
+              <section className="demand-days">
+                <h3>Par jour de la semaine</h3>
+                <StatBars items={orderedWeekdays} />
+              </section>
+              <section className="demand-hours">
+                <h3>Par heure</h3>
+                <VerticalBarChart
+                  items={orderedHours}
+                  colors={["#238b82"]}
+                  ariaLabel="Nombre de demandes par heure"
+                />
+              </section>
+            </div>
+          </section>
           <StatTable
             title="Statuts des entretiens"
             items={data.statuses}
             translate
+            action={exportButton("statuses")}
           />
         </>
       )}

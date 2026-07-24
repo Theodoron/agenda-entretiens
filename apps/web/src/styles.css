@@ -55,6 +55,56 @@
   display: grid;
   gap: 1rem;
 }
+.stat-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.stat-heading h2 {
+  margin: 0;
+}
+.statistics-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.statistics-heading-actions .secondary {
+  margin: 0;
+}
+button.xlsx-export-button {
+  display: inline-flex;
+  width: auto;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #2d7b50;
+  background: #edf8f1;
+  color: #1e6540;
+  font-size: 0.85rem;
+  box-shadow: 0 3px 10px rgba(30, 101, 64, 0.1);
+}
+button.xlsx-export-button:hover:not(:disabled) {
+  border-color: #1e6540;
+  background: #dff1e6;
+}
+button.xlsx-export-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.xlsx-export-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .origin-group {
   gap: 1.5rem;
 }
@@ -330,6 +380,13 @@
   border-radius: 14px;
   background: #faf7fd;
 }
+.demand-group {
+  gap: 1.5rem;
+}
+.demand-grid h3 {
+  margin: 0;
+  color: #4e2a84;
+}
 .demand-days .stat-bar i {
   background: #d45b87;
 }
@@ -350,6 +407,17 @@
 @media (max-width: 900px) {
   .demand-grid {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .stat-heading,
+  .statistics-heading-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  button.xlsx-export-button,
+  .statistics-heading-actions .secondary {
+    width: 100%;
   }
 }
 .header-actions {
