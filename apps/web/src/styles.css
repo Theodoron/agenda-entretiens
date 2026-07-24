@@ -1131,6 +1131,7 @@
   margin-top: 2.75rem;
   padding: 1rem;
   border: 1px solid #e7dcc8;
+  border-top: 0;
   border-radius: 12px;
   background: #fffdf9;
 }
